@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,7 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus } from 'lucide-react';
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 
-// Mock data for events
+interface CalendarPageProps {
+  selectedDate?: Date;
+  onDateSelect?: (date: Date) => void;
+  onCreateHabit?: () => void;
+  onCreateOneTime?: () => void;
+}
+
 const mockEvents = [
   {
     id: '1',
@@ -45,23 +50,48 @@ const mockEvents = [
   },
 ];
 
-const CalendarPage: React.FC = () => {
+const CalendarPage: React.FC<CalendarPageProps> = ({
+  selectedDate: propSelectedDate,
+  onDateSelect: propOnDateSelect,
+  onCreateHabit,
+  onCreateOneTime
+}) => {
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(propSelectedDate || new Date());
   const [events] = useState(mockEvents);
 
   const navigateDate = (direction: 'prev' | 'next') => {
+    let newDate: Date;
+    
     if (view === 'day') {
-      setSelectedDate(direction === 'prev' ? subDays(selectedDate, 1) : addDays(selectedDate, 1));
+      newDate = direction === 'prev' ? subDays(selectedDate, 1) : addDays(selectedDate, 1);
     } else if (view === 'week') {
-      setSelectedDate(direction === 'prev' ? subDays(selectedDate, 7) : addDays(selectedDate, 7));
+      newDate = direction === 'prev' ? subDays(selectedDate, 7) : addDays(selectedDate, 7);
     } else {
-      // For month view, move by 30 days for simplicity
-      setSelectedDate(direction === 'prev' ? subDays(selectedDate, 30) : addDays(selectedDate, 30));
+      newDate = direction === 'prev' ? subDays(selectedDate, 30) : addDays(selectedDate, 30);
+    }
+    
+    setSelectedDate(newDate);
+    if (propOnDateSelect) {
+      propOnDateSelect(newDate);
     }
   };
 
-  // Get days for the week view
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      if (propOnDateSelect) {
+        propOnDateSelect(date);
+      }
+    }
+  };
+
+  const handleAddEvent = () => {
+    if (onCreateOneTime) {
+      onCreateOneTime();
+    }
+  };
+
   const weekStart = startOfWeek(selectedDate);
   const weekEnd = endOfWeek(selectedDate);
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -151,7 +181,7 @@ const CalendarPage: React.FC = () => {
     <Calendar
       mode="single"
       selected={selectedDate}
-      onSelect={(date) => date && setSelectedDate(date)}
+      onSelect={handleDateSelect}
       className="w-full rounded-md border"
       modifiers={{
         booked: events.map(event => event.startDate),
@@ -200,7 +230,7 @@ const CalendarPage: React.FC = () => {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setSelectedDate(new Date())}
+                onClick={() => handleDateSelect(new Date())}
               >
                 Today
               </Button>
@@ -228,7 +258,7 @@ const CalendarPage: React.FC = () => {
               </TabsList>
             </Tabs>
 
-            <Button className="gap-1">
+            <Button className="gap-1" onClick={handleAddEvent}>
               <Plus className="h-4 w-4" />
               Add Event
             </Button>

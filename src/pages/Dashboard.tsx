@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
@@ -20,7 +19,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// Mock data for habits and streaks
+interface DashboardProps {
+  selectedDate?: Date;
+  onDateSelect?: (date: Date) => void;
+  onCreateOneTime?: () => void;
+}
+
 const mockHabits = [
   {
     id: '1',
@@ -113,13 +117,31 @@ const mockStreaks = [
   },
 ];
 
-const Dashboard: React.FC = () => {
+interface CalendarEvent {
+  id: string;
+  date: Date;
+  type: 'habit' | 'event';
+  title: string;
+}
+
+const calendarEvents: CalendarEvent[] = mockEvents.map((event, index) => ({
+  id: `event-${index}`,
+  ...event
+}));
+
+const Dashboard: React.FC<DashboardProps> = ({ 
+  selectedDate: propSelectedDate, 
+  onDateSelect, 
+  onCreateOneTime 
+}) => {
   const [habits, setHabits] = useState(mockHabits);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isOneTimeTask, setIsOneTimeTask] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  const [selectedDate, setSelectedDate] = useState<Date>(propSelectedDate || new Date());
 
   const handleCreateHabit = (values: any) => {
     const newHabit = {
@@ -160,8 +182,19 @@ const Dashboard: React.FC = () => {
   };
 
   const openTaskForm = (isOneTime: boolean) => {
-    setIsOneTimeTask(isOneTime);
-    setIsFormOpen(true);
+    if (isOneTime && onCreateOneTime) {
+      onCreateOneTime();
+    } else {
+      setIsOneTimeTask(isOneTime);
+      setIsFormOpen(true);
+    }
+  };
+
+  const handleDateSelection = (date: Date) => {
+    setSelectedDate(date);
+    if (onDateSelect) {
+      onDateSelect(date);
+    }
   };
 
   return (
@@ -228,7 +261,7 @@ const Dashboard: React.FC = () => {
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Upcoming</h2>
-        <CalendarView events={mockEvents} />
+        <CalendarView events={calendarEvents} />
       </div>
 
       <HabitForm

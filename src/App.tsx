@@ -25,7 +25,7 @@ const App = () => {
     setIsFormOpen(true);
   };
 
-  const handleFormSubmit = () => {
+  const handleFormSubmit = (values: any) => {
     toast({
       title: `${isOneTime ? "Task" : "Habit"} created successfully!`,
       description: `Your ${isOneTime ? "task" : "habit"} has been added to your schedule.`,

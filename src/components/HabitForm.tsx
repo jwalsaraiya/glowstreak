@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -52,16 +52,30 @@ const formSchema = z.object({
   startDate: z.date(),
   recurrence: z.enum(['daily', 'weekly', 'monthly', 'custom']),
   estimatedMinutes: z.coerce.number().min(1).optional(),
+  isOneTime: z.boolean().optional(),
 });
 
+// Define the type for form values
+export type HabitFormValues = z.infer<typeof formSchema>;
+
+// Update the interface to include defaultValues
 interface HabitFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: z.infer<typeof formSchema>) => void;
+  onSubmit: (values: HabitFormValues) => void;
+  defaultValues?: {
+    isOneTime?: boolean;
+    date?: Date;
+  };
 }
 
-const HabitForm: React.FC<HabitFormProps> = ({ open, onOpenChange, onSubmit }) => {
-  const form = useForm<z.infer<typeof formSchema>>({
+const HabitForm: React.FC<HabitFormProps> = ({ 
+  open, 
+  onOpenChange, 
+  onSubmit,
+  defaultValues 
+}) => {
+  const form = useForm<HabitFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
@@ -70,22 +84,44 @@ const HabitForm: React.FC<HabitFormProps> = ({ open, onOpenChange, onSubmit }) =
       priority: 'medium',
       startDate: new Date(),
       recurrence: 'daily',
+      isOneTime: false,
     },
   });
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+  // Update form when defaultValues change
+  useEffect(() => {
+    if (defaultValues) {
+      if (defaultValues.isOneTime !== undefined) {
+        form.setValue('isOneTime', defaultValues.isOneTime);
+        // If it's a one-time task, set recurrence to custom
+        if (defaultValues.isOneTime) {
+          form.setValue('recurrence', 'custom');
+        }
+      }
+      
+      if (defaultValues.date) {
+        form.setValue('startDate', defaultValues.date);
+      }
+    }
+  }, [defaultValues, form]);
+
+  const handleSubmit = (values: HabitFormValues) => {
     onSubmit(values);
     form.reset();
     onOpenChange(false);
   };
 
+  const isOneTime = form.watch('isOneTime');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Create New Habit</DialogTitle>
+          <DialogTitle>{isOneTime ? 'Create One-time Task' : 'Create New Habit'}</DialogTitle>
           <DialogDescription>
-            Add a new habit to track. Fill in the details below.
+            {isOneTime 
+              ? 'Add a one-time task to your schedule.' 
+              : 'Add a new habit to track. Fill in the details below.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -96,9 +132,9 @@ const HabitForm: React.FC<HabitFormProps> = ({ open, onOpenChange, onSubmit }) =
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Habit Name</FormLabel>
+                  <FormLabel>{isOneTime ? 'Task Name' : 'Habit Name'}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Read a book" {...field} />
+                    <Input placeholder={isOneTime ? "Buy groceries" : "Read a book"} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -113,7 +149,10 @@ const HabitForm: React.FC<HabitFormProps> = ({ open, onOpenChange, onSubmit }) =
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Read for at least 30 minutes before bed"
+                      placeholder={isOneTime 
+                        ? "Get milk, eggs, and bread" 
+                        : "Read for at least 30 minutes before bed"
+                      }
                       className="resize-none h-20"
                       {...field}
                     />
@@ -186,7 +225,7 @@ const HabitForm: React.FC<HabitFormProps> = ({ open, onOpenChange, onSubmit }) =
                 name="startDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Start Date</FormLabel>
+                    <FormLabel>{isOneTime ? 'Date' : 'Start Date'}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -212,6 +251,7 @@ const HabitForm: React.FC<HabitFormProps> = ({ open, onOpenChange, onSubmit }) =
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
+                          className={cn("p-3 pointer-events-auto")}
                         />
                       </PopoverContent>
                     </Popover>
@@ -220,32 +260,34 @@ const HabitForm: React.FC<HabitFormProps> = ({ open, onOpenChange, onSubmit }) =
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="recurrence"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Recurrence</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select frequency" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!isOneTime && (
+                <FormField
+                  control={form.control}
+                  name="recurrence"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recurrence</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             <FormField
@@ -266,15 +308,25 @@ const HabitForm: React.FC<HabitFormProps> = ({ open, onOpenChange, onSubmit }) =
                     <Clock className="ml-2 h-4 w-4 text-muted-foreground" />
                   </div>
                   <FormDescription>
-                    How long you expect this habit to take (optional)
+                    How long you expect this {isOneTime ? 'task' : 'habit'} to take (optional)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="isOneTime"
+              render={({ field }) => (
+                <input type="hidden" {...field} />
+              )}
+            />
+
             <DialogFooter>
-              <Button type="submit">Create Habit</Button>
+              <Button type="submit">
+                {isOneTime ? 'Create Task' : 'Create Habit'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
