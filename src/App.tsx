@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import Analytics from "./pages/Analytics";
@@ -16,6 +17,26 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isOneTime, setIsOneTime] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  const handleCreateHabit = (oneTime: boolean = false) => {
+    setIsOneTime(oneTime);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSubmit = () => {
+    toast({
+      title: `${isOneTime ? "Task" : "Habit"} created successfully!`,
+      description: `Your ${isOneTime ? "task" : "habit"} has been added to your schedule.`,
+    });
+    setIsFormOpen(false);
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    // You can add more functionality here later
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -24,11 +45,24 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <div className="flex h-screen overflow-hidden">
-            <Navbar onCreateHabit={() => setIsFormOpen(true)} />
+            <Navbar onCreateHabit={() => handleCreateHabit(false)} />
             <main className="flex-1 overflow-y-auto pb-16">
               <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/" element={
+                  <Dashboard 
+                    selectedDate={selectedDate}
+                    onDateSelect={handleDateSelect}
+                    onCreateOneTime={() => handleCreateHabit(true)}
+                  />
+                } />
+                <Route path="/calendar" element={
+                  <Calendar 
+                    selectedDate={selectedDate}
+                    onDateSelect={handleDateSelect}
+                    onCreateHabit={() => handleCreateHabit(false)}
+                    onCreateOneTime={() => handleCreateHabit(true)}
+                  />
+                } />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
@@ -37,7 +71,11 @@ const App = () => {
           <HabitForm
             open={isFormOpen}
             onOpenChange={setIsFormOpen}
-            onSubmit={() => {}}
+            onSubmit={handleFormSubmit}
+            defaultValues={{
+              isOneTime,
+              date: selectedDate
+            }}
           />
         </BrowserRouter>
       </TooltipProvider>

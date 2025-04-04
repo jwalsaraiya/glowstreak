@@ -116,7 +116,64 @@
 /* Responsive styles */
 @media (max-width: 640px) {
   .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    @apply px-4;
   }
+  
+  .habit-grid {
+    @apply grid-cols-1;
+  }
+  
+  .calendar-container {
+    @apply overflow-x-auto;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .habit-grid {
+    @apply grid-cols-2;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .habit-grid {
+    @apply grid-cols-3;
+  }
+}
+
+@media (min-width: 1025px) {
+  .habit-grid {
+    @apply grid-cols-4;
+  }
+}
+
+/* Calendar date hover effect */
+.calendar-date {
+  @apply cursor-pointer transition-all duration-200 hover:bg-primary/10 rounded-md;
+}
+
+.calendar-date.active {
+  @apply bg-primary text-primary-foreground;
+}
+
+/* Improved card shadows */
+.card-shadow {
+  @apply shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_4px_6px_-2px_rgba(0,0,0,0.03)];
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/30;
 }

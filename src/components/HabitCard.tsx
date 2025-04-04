@@ -47,8 +47,10 @@ const HabitCard: React.FC<HabitCardProps> = ({
   return (
     <Card
       className={cn(
-        "streak-card hover:cursor-pointer h-full transition-all duration-300 relative",
-        isCompleted && "opacity-75 bg-secondary/50",
+        "relative h-full transition-all duration-300 card-shadow border-0",
+        isCompleted ? "opacity-75 bg-secondary/50" : "bg-card",
+        hasLongStreak && !isCompleted ? "streak-card" : "",
+        "hover:cursor-pointer hover:shadow-lg hover:-translate-y-1",
         className
       )}
       onClick={onClick}

@@ -1,25 +1,38 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, LayoutGrid } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, Plus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { format, addDays, subDays, isSameDay } from 'date-fns';
 
 interface CalendarEvent {
   date: Date;
   type: 'habit' | 'event';
   title: string;
+  id: string;
 }
 
 interface CalendarViewProps {
   events: CalendarEvent[];
+  onDateSelect?: (date: Date) => void;
+  onEventClick?: (eventId: string) => void;
+  onAddEvent?: (date: Date) => void;
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ 
+  events,
+  onDateSelect,
+  onEventClick,
+  onAddEvent
+}) => {
   const today = new Date();
   const isMobile = useIsMobile();
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [viewDate, setViewDate] = useState<Date>(today);
 
   // Transform events into a map for easier lookup
   const eventsByDate = events.reduce((acc, event) => {
@@ -31,12 +44,53 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
     return acc;
   }, {} as Record<string, CalendarEvent[]>);
 
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      if (onDateSelect) onDateSelect(date);
+    }
+  };
+
+  const handleEventClick = (eventId: string) => {
+    if (onEventClick) onEventClick(eventId);
+  };
+
+  const changeWeek = (direction: 'prev' | 'next') => {
+    setViewDate(prevDate => 
+      direction === 'prev' ? subDays(prevDate, 7) : addDays(prevDate, 7)
+    );
+  };
+
+  const getWeekDays = () => {
+    const startOfWeek = new Date(viewDate);
+    startOfWeek.setDate(viewDate.getDate() - viewDate.getDay());
+    
+    return Array.from({ length: 7 }).map((_, i) => {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      return date;
+    });
+  };
+
   return (
-    <Card className="h-full border shadow">
+    <Card className="h-full border-0 card-shadow">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl font-semibold flex items-center">
-          <CalendarDays className="mr-2 h-5 w-5" />
-          Calendar
+        <CardTitle className="text-xl font-semibold flex items-center justify-between">
+          <div className="flex items-center">
+            <CalendarDays className="mr-2 h-5 w-5" />
+            Calendar
+          </div>
+          {onAddEvent && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-8 px-2" 
+              onClick={() => onAddEvent(selectedDate)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Add</span>
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -51,7 +105,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
           <TabsContent value="month" className="mt-0 space-y-4">
             <Calendar
               mode="single"
-              selected={today}
+              selected={selectedDate}
+              onSelect={handleDateSelect}
               className="p-4"
               modifiers={{
                 booked: Object.keys(eventsByDate).map(dateStr => new Date(dateStr)),
@@ -64,36 +119,59 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
                   borderRadius: "0.5rem",
                 }
               }}
+              classNames={{
+                day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 calendar-date",
+                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+              }}
             />
           </TabsContent>
 
           <TabsContent value="week" className="mt-0">
+            <div className="flex justify-between items-center px-4 pt-2">
+              <Button variant="ghost" size="icon" onClick={() => changeWeek('prev')}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <h3 className="text-sm font-medium">
+                {format(getWeekDays()[0], 'MMM d')} - {format(getWeekDays()[6], 'MMM d, yyyy')}
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => changeWeek('next')}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
             <div className="p-4 grid grid-cols-7 gap-1 text-center text-xs sm:text-sm font-medium">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                 <div key={day}>{day}</div>
               ))}
             </div>
             <div className="px-4 pb-4 grid grid-cols-7 gap-1 text-center">
-              {Array.from({ length: 7 }).map((_, i) => {
-                const date = new Date(today);
-                date.setDate(today.getDate() - today.getDay() + i);
+              {getWeekDays().map((date, i) => {
                 const dateStr = date.toDateString();
                 const dayEvents = eventsByDate[dateStr] || [];
-                const isToday = date.toDateString() === today.toDateString();
+                const isToday = isSameDay(date, today);
+                const isSelected = isSameDay(date, selectedDate);
 
                 return (
-                  <div key={i} className="flex flex-col">
-                    <div className={`mb-1 h-8 w-8 rounded-full flex items-center justify-center mx-auto ${
-                      isToday ? 'bg-primary text-primary-foreground' : ''
+                  <div 
+                    key={i} 
+                    className="flex flex-col"
+                    onClick={() => handleDateSelect(date)}
+                  >
+                    <div className={`mb-1 h-8 w-8 rounded-full flex items-center justify-center mx-auto cursor-pointer transition-colors ${
+                      isSelected ? 'bg-primary text-primary-foreground' : 
+                      isToday ? 'bg-secondary-foreground/10' : ''
                     }`}>
                       {date.getDate()}
                     </div>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 max-h-[120px] overflow-y-auto">
                       {dayEvents.map((event, idx) => (
                         <Badge 
                           key={idx}
                           variant={event.type === 'habit' ? 'default' : 'outline'}
-                          className="truncate text-xs py-0.5"
+                          className="truncate text-xs py-0.5 cursor-pointer hover:bg-primary/90"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEventClick(event.id);
+                          }}
                         >
                           {event.title}
                         </Badge>
