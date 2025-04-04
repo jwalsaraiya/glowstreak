@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { CheckCircle, Clock } from 'lucide-react';
+import { CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface HabitCardProps {
   title: string;
@@ -12,8 +13,10 @@ interface HabitCardProps {
   streak: number;
   priority: 'low' | 'medium' | 'high';
   isCompleted?: boolean;
+  isOneTime?: boolean;
   className?: string;
   onClick?: () => void;
+  onDelete?: () => void;
 }
 
 const priorityClasses = {
@@ -29,15 +32,22 @@ const HabitCard: React.FC<HabitCardProps> = ({
   streak,
   priority,
   isCompleted = false,
+  isOneTime = false,
   className,
   onClick,
+  onDelete,
 }) => {
-  const hasLongStreak = streak >= 5;
+  const hasLongStreak = streak >= 5 && !isOneTime;
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) onDelete();
+  };
 
   return (
     <Card
       className={cn(
-        "streak-card hover:cursor-pointer h-full transition-all duration-300",
+        "streak-card hover:cursor-pointer h-full transition-all duration-300 relative",
         isCompleted && "opacity-75 bg-secondary/50",
         className
       )}
@@ -46,7 +56,7 @@ const HabitCard: React.FC<HabitCardProps> = ({
       {hasLongStreak && !isCompleted && <div className="streak-glow"></div>}
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <div className="flex flex-col space-y-1">
+          <div className="flex flex-col space-y-1 pr-8">
             <h3 className={cn("font-medium text-lg", isCompleted && "line-through opacity-70")}>
               {title}
             </h3>
@@ -70,7 +80,7 @@ const HabitCard: React.FC<HabitCardProps> = ({
             <Badge variant="outline" className={cn("rounded-full text-xs", priorityClasses[priority])}>
               {priority}
             </Badge>
-            {streak > 0 && (
+            {streak > 0 && !isOneTime && (
               <Badge 
                 className={cn(
                   "rounded-full font-semibold",
@@ -80,9 +90,25 @@ const HabitCard: React.FC<HabitCardProps> = ({
                 {streak} day{streak !== 1 ? 's' : ''}
               </Badge>
             )}
+            {isOneTime && (
+              <Badge variant="outline" className="rounded-full text-xs">
+                One-time
+              </Badge>
+            )}
           </div>
         </div>
       </CardContent>
+      
+      {onDelete && (
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:text-destructive" 
+          onClick={handleDeleteClick}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
     </Card>
   );
 };

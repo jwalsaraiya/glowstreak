@@ -5,9 +5,20 @@ import HabitCard from '@/components/HabitCard';
 import CalendarView from '@/components/CalendarView';
 import StreakAnalytics from '@/components/StreakAnalytics';
 import HabitForm from '@/components/HabitForm';
-import { Plus } from 'lucide-react';
+import { Plus, CalendarPlus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Mock data for habits and streaks
 const mockHabits = [
@@ -19,6 +30,7 @@ const mockHabits = [
     streak: 12,
     priority: 'high' as const,
     isCompleted: true,
+    isOneTime: false,
   },
   {
     id: '2',
@@ -28,6 +40,7 @@ const mockHabits = [
     streak: 5,
     priority: 'medium' as const,
     isCompleted: false,
+    isOneTime: false,
   },
   {
     id: '3',
@@ -37,6 +50,7 @@ const mockHabits = [
     streak: 8,
     priority: 'high' as const,
     isCompleted: false,
+    isOneTime: false,
   },
   {
     id: '4',
@@ -46,6 +60,7 @@ const mockHabits = [
     streak: 15,
     priority: 'medium' as const,
     isCompleted: false,
+    isOneTime: false,
   },
 ];
 
@@ -101,7 +116,10 @@ const mockStreaks = [
 const Dashboard: React.FC = () => {
   const [habits, setHabits] = useState(mockHabits);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isOneTimeTask, setIsOneTimeTask] = useState(false);
+  const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const handleCreateHabit = (values: any) => {
     const newHabit = {
@@ -112,13 +130,15 @@ const Dashboard: React.FC = () => {
       streak: 0,
       priority: values.priority,
       isCompleted: false,
+      isOneTime: isOneTimeTask,
     };
 
     setHabits([...habits, newHabit]);
     toast({
-      title: "Habit Created",
-      description: `${values.title} has been added to your habits.`,
+      title: isOneTimeTask ? "Task Created" : "Habit Created",
+      description: `${values.title} has been added to your ${isOneTimeTask ? 'tasks' : 'habits'}.`,
     });
+    setIsOneTimeTask(false);
   };
 
   const toggleHabitCompletion = (id: string) => {
@@ -127,25 +147,53 @@ const Dashboard: React.FC = () => {
     ));
   };
 
+  const handleDeleteHabit = () => {
+    if (habitToDelete) {
+      const habitToRemove = habits.find(h => h.id === habitToDelete);
+      setHabits(habits.filter(habit => habit.id !== habitToDelete));
+      toast({
+        title: habitToRemove?.isOneTime ? "Task Deleted" : "Habit Deleted",
+        description: `${habitToRemove?.title} has been removed.`,
+      });
+      setHabitToDelete(null);
+    }
+  };
+
+  const openTaskForm = (isOneTime: boolean) => {
+    setIsOneTimeTask(isOneTime);
+    setIsFormOpen(true);
+  };
+
   return (
-    <div className="container mx-auto py-6 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+    <div className="container mx-auto py-4 md:py-6 px-4 md:px-6 max-w-7xl">
+      <div className="mb-4 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
         <div className="md:col-span-2">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Today's Habits</h2>
-            <Button
-              size="sm"
-              onClick={() => setIsFormOpen(true)}
-              className="gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              New Habit
-            </Button>
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+            <h2 className="text-xl font-semibold">Today's Activities</h2>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => openTaskForm(true)}
+                className="gap-1"
+              >
+                <CalendarPlus className="h-4 w-4" />
+                {!isMobile && "One-time Task"}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => openTaskForm(false)}
+                className="gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                {!isMobile && "New Habit"}
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -158,12 +206,14 @@ const Dashboard: React.FC = () => {
                 streak={habit.streak}
                 priority={habit.priority}
                 isCompleted={habit.isCompleted}
+                isOneTime={habit.isOneTime}
                 onClick={() => toggleHabitCompletion(habit.id)}
+                onDelete={() => setHabitToDelete(habit.id)}
               />
             ))}
             <div 
-              className="placeholder-card flex items-center justify-center h-full"
-              onClick={() => setIsFormOpen(true)}
+              className="placeholder-card flex items-center justify-center h-full min-h-[140px]"
+              onClick={() => openTaskForm(false)}
             >
               <Plus className="h-6 w-6 text-muted-foreground mb-2" />
               <span className="text-muted-foreground font-medium">Add New Habit</span>
@@ -171,7 +221,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div>
+        <div className="hidden md:block">
           <StreakAnalytics streaks={mockStreaks} />
         </div>
       </div>
@@ -186,6 +236,23 @@ const Dashboard: React.FC = () => {
         onOpenChange={setIsFormOpen}
         onSubmit={handleCreateHabit}
       />
+
+      <AlertDialog open={!!habitToDelete} onOpenChange={() => setHabitToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this item and remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteHabit} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

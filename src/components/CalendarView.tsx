@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, LayoutGrid } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CalendarEvent {
   date: Date;
@@ -18,6 +19,7 @@ interface CalendarViewProps {
 
 const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
   const today = new Date();
+  const isMobile = useIsMobile();
 
   // Transform events into a map for easier lookup
   const eventsByDate = events.reduce((acc, event) => {
@@ -30,7 +32,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
   }, {} as Record<string, CalendarEvent[]>);
 
   return (
-    <Card className="h-full">
+    <Card className="h-full border shadow">
       <CardHeader className="pb-2">
         <CardTitle className="text-xl font-semibold flex items-center">
           <CalendarDays className="mr-2 h-5 w-5" />
@@ -38,7 +40,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <Tabs defaultValue="month">
+        <Tabs defaultValue={isMobile ? "week" : "month"}>
           <div className="px-4 pt-2">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="month">Month</TabsTrigger>
@@ -66,7 +68,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
           </TabsContent>
 
           <TabsContent value="week" className="mt-0">
-            <div className="p-4 grid grid-cols-7 gap-1 text-center text-sm font-medium">
+            <div className="p-4 grid grid-cols-7 gap-1 text-center text-xs sm:text-sm font-medium">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                 <div key={day}>{day}</div>
               ))}

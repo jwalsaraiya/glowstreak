@@ -97,12 +97,12 @@
   }
 
   .streak-card {
-    @apply relative bg-card rounded-xl border shadow-sm transition-all 
+    @apply relative bg-card rounded-xl border transition-all 
            hover:shadow-md hover:-translate-y-1 duration-300;
   }
 
   .streak-glow {
-    @apply absolute -inset-0.5 rounded-xl blur-sm opacity-50 
+    @apply absolute -inset-0.5 rounded-xl blur-sm opacity-30
            bg-gradient-to-br from-primary to-teal-400 animate-pulse-glow -z-10;
   }
 
@@ -110,5 +110,13 @@
     @apply flex flex-col items-center justify-center p-4 border border-dashed 
            rounded-xl bg-secondary/50 hover:bg-secondary/80 cursor-pointer 
            transition-all duration-300 ease-in-out;
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }

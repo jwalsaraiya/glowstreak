@@ -25,7 +25,7 @@ const App = () => {
         <BrowserRouter>
           <div className="flex h-screen overflow-hidden">
             <Navbar onCreateHabit={() => setIsFormOpen(true)} />
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto pb-16">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/calendar" element={<Calendar />} />
