@@ -315,11 +315,18 @@ const HabitForm: React.FC<HabitFormProps> = ({
               )}
             />
 
+            {/* Fix for the TypeScript error - convert boolean to string */}
             <FormField
               control={form.control}
               name="isOneTime"
               render={({ field }) => (
-                <input type="hidden" {...field} />
+                <input 
+                  type="hidden" 
+                  value={field.value ? "true" : "false"} 
+                  onChange={(e) => {
+                    field.onChange(e.target.value === "true");
+                  }}
+                />
               )}
             />
 
