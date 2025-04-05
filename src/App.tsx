@@ -9,9 +9,11 @@ import { toast } from "@/components/ui/use-toast";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 import HabitForm from "./components/HabitForm";
+import { ThemeProvider } from "./hooks/use-theme";
 
 const queryClient = new QueryClient();
 
@@ -40,45 +42,48 @@ const App: React.FC = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <div className="flex h-screen overflow-hidden">
-            <Navbar onCreateHabit={() => handleCreateHabit(false)} />
-            <main className="flex-1 overflow-y-auto pb-16">
-              <Routes>
-                <Route path="/" element={
-                  <Dashboard 
-                    selectedDate={selectedDate}
-                    onDateSelect={handleDateSelect}
-                    onCreateOneTime={() => handleCreateHabit(true)}
-                  />
-                } />
-                <Route path="/calendar" element={
-                  <Calendar 
-                    selectedDate={selectedDate}
-                    onDateSelect={handleDateSelect}
-                    onCreateHabit={() => handleCreateHabit(false)}
-                    onCreateOneTime={() => handleCreateHabit(true)}
-                  />
-                } />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-          </div>
-          <HabitForm
-            open={isFormOpen}
-            onOpenChange={setIsFormOpen}
-            onSubmit={handleFormSubmit}
-            defaultValues={{
-              isOneTime,
-              date: selectedDate
-            }}
-          />
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="system">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <div className="flex h-screen overflow-hidden">
+              <Navbar onCreateHabit={() => handleCreateHabit(false)} />
+              <main className="flex-1 overflow-y-auto pb-16">
+                <Routes>
+                  <Route path="/" element={
+                    <Dashboard 
+                      selectedDate={selectedDate}
+                      onDateSelect={handleDateSelect}
+                      onCreateOneTime={() => handleCreateHabit(true)}
+                    />
+                  } />
+                  <Route path="/calendar" element={
+                    <Calendar 
+                      selectedDate={selectedDate}
+                      onDateSelect={handleDateSelect}
+                      onCreateHabit={() => handleCreateHabit(false)}
+                      onCreateOneTime={() => handleCreateHabit(true)}
+                    />
+                  } />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
+            <HabitForm
+              open={isFormOpen}
+              onOpenChange={setIsFormOpen}
+              onSubmit={handleFormSubmit}
+              defaultValues={{
+                isOneTime,
+                date: selectedDate
+              }}
+            />
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };

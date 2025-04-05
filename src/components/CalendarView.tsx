@@ -5,15 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, Plus } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { format, addDays, subDays, isSameDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface CalendarEvent {
   date: Date;
   type: 'habit' | 'event';
   title: string;
   id: string;
+  isCompleted?: boolean;
 }
 
 interface CalendarViewProps {
@@ -21,18 +23,20 @@ interface CalendarViewProps {
   onDateSelect?: (date: Date) => void;
   onEventClick?: (eventId: string) => void;
   onAddEvent?: (date: Date) => void;
+  selectedDate?: Date;
 }
 
 const CalendarView: React.FC<CalendarViewProps> = ({ 
   events,
   onDateSelect,
   onEventClick,
-  onAddEvent
+  onAddEvent,
+  selectedDate: propSelectedDate
 }) => {
   const today = new Date();
   const isMobile = useIsMobile();
-  const [selectedDate, setSelectedDate] = useState<Date>(today);
-  const [viewDate, setViewDate] = useState<Date>(today);
+  const [selectedDate, setSelectedDate] = useState<Date>(propSelectedDate || today);
+  const [viewDate, setViewDate] = useState<Date>(propSelectedDate || today);
 
   // Transform events into a map for easier lookup
   const eventsByDate = events.reduce((acc, event) => {
@@ -73,7 +77,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   return (
-    <Card className="h-full border-0 card-shadow">
+    <Card className="h-full border shadow-none">
       <CardHeader className="pb-2">
         <CardTitle className="text-xl font-semibold flex items-center justify-between">
           <div className="flex items-center">
@@ -156,10 +160,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                     className="flex flex-col"
                     onClick={() => handleDateSelect(date)}
                   >
-                    <div className={`mb-1 h-8 w-8 rounded-full flex items-center justify-center mx-auto cursor-pointer transition-colors ${
+                    <div className={cn(
+                      "mb-1 h-8 w-8 rounded-full flex items-center justify-center mx-auto cursor-pointer transition-colors",
                       isSelected ? 'bg-primary text-primary-foreground' : 
-                      isToday ? 'bg-secondary-foreground/10' : ''
-                    }`}>
+                      isToday ? 'bg-muted text-foreground' : ''
+                    )}>
                       {date.getDate()}
                     </div>
                     <div className="flex flex-col gap-1 max-h-[120px] overflow-y-auto">
@@ -167,7 +172,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                         <Badge 
                           key={idx}
                           variant={event.type === 'habit' ? 'default' : 'outline'}
-                          className="truncate text-xs py-0.5 cursor-pointer hover:bg-primary/90"
+                          className={cn(
+                            "truncate text-xs py-0.5 cursor-pointer",
+                            event.isCompleted ? "opacity-70 line-through" : "hover:bg-primary/90"
+                          )}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEventClick(event.id);

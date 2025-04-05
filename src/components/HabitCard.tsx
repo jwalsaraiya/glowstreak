@@ -47,10 +47,10 @@ const HabitCard: React.FC<HabitCardProps> = ({
   return (
     <Card
       className={cn(
-        "relative h-full transition-all duration-300 card-shadow border-0",
+        "relative h-full transition-all duration-300 border",
         isCompleted ? "opacity-75 bg-secondary/50" : "bg-card",
         hasLongStreak && !isCompleted ? "streak-card" : "",
-        "hover:cursor-pointer hover:shadow-lg hover:-translate-y-1",
+        "hover:cursor-pointer hover:-translate-y-1",
         className
       )}
       onClick={onClick}
@@ -78,7 +78,7 @@ const HabitCard: React.FC<HabitCardProps> = ({
         
         <div className="flex justify-between items-center mt-4">
           <Badge className="rounded-full text-xs">{category}</Badge>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2 justify-end">
             <Badge variant="outline" className={cn("rounded-full text-xs", priorityClasses[priority])}>
               {priority}
             </Badge>
@@ -105,7 +105,7 @@ const HabitCard: React.FC<HabitCardProps> = ({
         <Button 
           variant="ghost" 
           size="icon" 
-          className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:text-destructive" 
+          className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive z-10" 
           onClick={handleDeleteClick}
         >
           <Trash2 className="h-4 w-4" />
