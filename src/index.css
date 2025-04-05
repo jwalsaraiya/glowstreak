@@ -258,3 +258,10 @@
 .content-wrapper {
   @apply p-4 md:p-6 lg:p-8;
 }
+
+/* Switch animation fix */
+.switch-thumb {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}

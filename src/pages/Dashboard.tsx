@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, isSameDay } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
@@ -38,14 +37,12 @@ const Dashboard: React.FC = () => {
   const isMobile = useIsMobile();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
 
-  // Load user data from localStorage
   useEffect(() => {
     if (user) {
       const userData = localStorage.getItem(`userData_${user.id}`);
@@ -57,7 +54,6 @@ const Dashboard: React.FC = () => {
     }
   }, [user]);
 
-  // Save user data to localStorage whenever habits or events change
   useEffect(() => {
     if (user) {
       const userData: UserData = {
@@ -218,7 +214,6 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Weekly date bar */}
       <div className="mb-6">
         <WeeklyDateBar 
           selectedDate={selectedDate} 
@@ -275,32 +270,6 @@ const Dashboard: React.FC = () => {
             <span className="text-muted-foreground font-medium">Add New Habit</span>
           </div>
         </div>
-      </div>
-
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Upcoming</h2>
-        <CalendarView 
-          events={calendarEvents} 
-          onDateSelect={handleDateSelection}
-          selectedDate={selectedDate}
-          onEventClick={(eventId) => {
-            // Handle event click
-            const habitId = eventId.startsWith('habit-') 
-              ? eventId.split('-')[1] 
-              : null;
-            
-            if (habitId) {
-              const habit = habits.find(h => h.id === habitId);
-              if (habit) {
-                toggleHabitCompletion(habitId);
-              }
-            }
-          }}
-          onAddEvent={(date) => {
-            setSelectedDate(date);
-            openTaskForm(true);
-          }}
-        />
       </div>
 
       <AlertDialog open={!!habitToDelete} onOpenChange={() => setHabitToDelete(null)}>

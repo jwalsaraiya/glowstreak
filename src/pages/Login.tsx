@@ -51,7 +51,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+    <div className="flex items-center justify-center min-h-screen w-full bg-background px-4">
       <div className="w-full max-w-md">
         <Card className="border shadow-none">
           <Tabs defaultValue="login" className="w-full">

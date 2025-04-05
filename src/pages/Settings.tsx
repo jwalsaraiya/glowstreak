@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UserSettings {
   reduceAnimations: boolean;
@@ -21,6 +22,7 @@ interface UserSettings {
   strictStreakCalculation: boolean;
   autoArchive: boolean;
   showCompleted: boolean;
+  timeZone: string;
 }
 
 const defaultSettings: UserSettings = {
@@ -31,8 +33,27 @@ const defaultSettings: UserSettings = {
   achievementNotifications: true,
   strictStreakCalculation: true,
   autoArchive: false,
-  showCompleted: true
+  showCompleted: true,
+  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
 };
+
+// List of common time zones
+const timeZones = [
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Toronto",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Paris",
+  "Europe/Rome",
+  "Asia/Tokyo",
+  "Asia/Shanghai",
+  "Asia/Singapore",
+  "Australia/Sydney",
+  "Pacific/Auckland"
+];
 
 const Settings = () => {
   const { theme, setTheme } = useTheme();
@@ -65,7 +86,7 @@ const Settings = () => {
     }
   }, [settings, user]);
 
-  const updateSetting = (key: keyof UserSettings, value: boolean) => {
+  const updateSetting = (key: keyof UserSettings, value: any) => {
     setSettings(prev => {
       const newSettings = { ...prev, [key]: value };
       
@@ -155,6 +176,7 @@ const Settings = () => {
                     id="reduce-animations" 
                     checked={settings.reduceAnimations}
                     onCheckedChange={(checked) => updateSetting('reduceAnimations', checked)}
+                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -173,6 +195,7 @@ const Settings = () => {
                     id="compact-view" 
                     checked={settings.compactView}
                     onCheckedChange={(checked) => updateSetting('compactView', checked)}
+                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -201,6 +224,7 @@ const Settings = () => {
                     id="reminder-notifications" 
                     checked={settings.reminderNotifications}
                     onCheckedChange={(checked) => updateSetting('reminderNotifications', checked)}
+                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -219,6 +243,7 @@ const Settings = () => {
                     id="streak-notifications" 
                     checked={settings.streakAlerts}
                     onCheckedChange={(checked) => updateSetting('streakAlerts', checked)}
+                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -237,6 +262,7 @@ const Settings = () => {
                     id="achievement-notifications" 
                     checked={settings.achievementNotifications}
                     onCheckedChange={(checked) => updateSetting('achievementNotifications', checked)}
+                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -270,16 +296,33 @@ const Settings = () => {
               <Separator />
               
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5 flex items-center">
-                    <Bell className="h-5 w-5 mr-2" />
-                    <div>
-                      <h4 className="font-medium">Notifications</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Manage your notification preferences
-                      </p>
-                    </div>
+                <div className="space-y-0.5 flex items-start flex-col">
+                  <div className="flex items-center mb-2">
+                    <Clock className="h-5 w-5 mr-2" />
+                    <h4 className="font-medium">Time zone</h4>
                   </div>
+                  
+                  <Select 
+                    value={settings.timeZone} 
+                    onValueChange={(value) => updateSetting('timeZone', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select time zone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={Intl.DateTimeFormat().resolvedOptions().timeZone}>
+                        System: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                      </SelectItem>
+                      {timeZones.map(zone => (
+                        <SelectItem key={zone} value={zone}>
+                          {zone.replace('_', ' ').replace('/', ': ')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your time zone is used to display dates and times correctly
+                  </p>
                 </div>
               </div>
               
@@ -288,11 +331,11 @@ const Settings = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5 flex items-center">
-                    <Clock className="h-5 w-5 mr-2" />
+                    <Bell className="h-5 w-5 mr-2" />
                     <div>
-                      <h4 className="font-medium">Time zone</h4>
+                      <h4 className="font-medium">Notifications</h4>
                       <p className="text-sm text-muted-foreground">
-                        Current: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                        Manage your notification preferences
                       </p>
                     </div>
                   </div>
@@ -334,6 +377,7 @@ const Settings = () => {
                     id="streak-calculation" 
                     checked={settings.strictStreakCalculation}
                     onCheckedChange={(checked) => updateSetting('strictStreakCalculation', checked)}
+                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -352,6 +396,7 @@ const Settings = () => {
                     id="auto-archive" 
                     checked={settings.autoArchive}
                     onCheckedChange={(checked) => updateSetting('autoArchive', checked)}
+                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -370,6 +415,7 @@ const Settings = () => {
                     id="default-view" 
                     checked={settings.showCompleted}
                     onCheckedChange={(checked) => updateSetting('showCompleted', checked)}
+                    className="switch-fix"
                   />
                 </div>
               </div>
