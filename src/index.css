@@ -244,7 +244,9 @@
 
 /* Fix for reduce animations setting */
 .reduce-animations * {
-  @apply transition-none !important transform-none !important animate-none !important;
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
 }
 
 /* Auth styles */
