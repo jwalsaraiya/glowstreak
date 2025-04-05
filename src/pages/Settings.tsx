@@ -1,15 +1,92 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Moon, Sun, Monitor, User, Bell, Clock } from 'lucide-react';
+import { Moon, Sun, Monitor, User, Bell, Clock, LogOut } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/hooks/use-auth';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+
+interface UserSettings {
+  reduceAnimations: boolean;
+  compactView: boolean;
+  reminderNotifications: boolean;
+  streakAlerts: boolean;
+  achievementNotifications: boolean;
+  strictStreakCalculation: boolean;
+  autoArchive: boolean;
+  showCompleted: boolean;
+}
+
+const defaultSettings: UserSettings = {
+  reduceAnimations: false,
+  compactView: false,
+  reminderNotifications: true,
+  streakAlerts: true,
+  achievementNotifications: true,
+  strictStreakCalculation: true,
+  autoArchive: false,
+  showCompleted: true
+};
 
 const Settings = () => {
   const { theme, setTheme } = useTheme();
+  const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [settings, setSettings] = useState<UserSettings>(defaultSettings);
+  
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Load settings from localStorage
+  useEffect(() => {
+    if (user) {
+      const savedSettings = localStorage.getItem(`settings_${user.id}`);
+      if (savedSettings) {
+        setSettings(JSON.parse(savedSettings));
+      }
+    }
+  }, [user]);
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`settings_${user.id}`, JSON.stringify(settings));
+    }
+  }, [settings, user]);
+
+  const updateSetting = (key: keyof UserSettings, value: boolean) => {
+    setSettings(prev => {
+      const newSettings = { ...prev, [key]: value };
+      
+      // Apply settings immediately
+      if (key === 'reduceAnimations') {
+        document.body.classList.toggle('reduce-animations', value);
+      }
+      
+      toast({
+        title: "Settings updated",
+        description: "Your preferences have been saved.",
+      });
+      
+      return newSettings;
+    });
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   
   return (
     <div className="container mx-auto py-6 max-w-5xl">
@@ -41,21 +118,21 @@ const Settings = () => {
                 <h3 className="text-lg font-medium">Theme</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div 
-                    className={`flex flex-col items-center justify-center p-4 rounded-lg border cursor-pointer hover:border-primary ${theme === 'light' ? 'border-primary bg-primary/5' : ''}`}
+                    className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer hover:border-primary ${theme === 'light' ? 'border-primary bg-primary/5' : ''}`}
                     onClick={() => setTheme('light')}
                   >
                     <Sun className="h-6 w-6 mb-2" />
                     <span>Light</span>
                   </div>
                   <div 
-                    className={`flex flex-col items-center justify-center p-4 rounded-lg border cursor-pointer hover:border-primary ${theme === 'dark' ? 'border-primary bg-primary/5' : ''}`}
+                    className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer hover:border-primary ${theme === 'dark' ? 'border-primary bg-primary/5' : ''}`}
                     onClick={() => setTheme('dark')}
                   >
                     <Moon className="h-6 w-6 mb-2" />
                     <span>Dark</span>
                   </div>
                   <div 
-                    className={`flex flex-col items-center justify-center p-4 rounded-lg border cursor-pointer hover:border-primary ${theme === 'system' ? 'border-primary bg-primary/5' : ''}`}
+                    className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer hover:border-primary ${theme === 'system' ? 'border-primary bg-primary/5' : ''}`}
                     onClick={() => setTheme('system')}
                   >
                     <Monitor className="h-6 w-6 mb-2" />
@@ -74,7 +151,11 @@ const Settings = () => {
                       Disable animations for improved performance
                     </p>
                   </div>
-                  <Switch id="reduce-animations" />
+                  <Switch 
+                    id="reduce-animations" 
+                    checked={settings.reduceAnimations}
+                    onCheckedChange={(checked) => updateSetting('reduceAnimations', checked)}
+                  />
                 </div>
               </div>
               
@@ -88,7 +169,11 @@ const Settings = () => {
                       Show more items on screen with a compact layout
                     </p>
                   </div>
-                  <Switch id="compact-view" />
+                  <Switch 
+                    id="compact-view" 
+                    checked={settings.compactView}
+                    onCheckedChange={(checked) => updateSetting('compactView', checked)}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -112,7 +197,11 @@ const Settings = () => {
                       Receive notifications for uncompleted habits
                     </p>
                   </div>
-                  <Switch id="reminder-notifications" defaultChecked />
+                  <Switch 
+                    id="reminder-notifications" 
+                    checked={settings.reminderNotifications}
+                    onCheckedChange={(checked) => updateSetting('reminderNotifications', checked)}
+                  />
                 </div>
               </div>
               
@@ -126,7 +215,11 @@ const Settings = () => {
                       Get notified when you're about to break a streak
                     </p>
                   </div>
-                  <Switch id="streak-notifications" defaultChecked />
+                  <Switch 
+                    id="streak-notifications" 
+                    checked={settings.streakAlerts}
+                    onCheckedChange={(checked) => updateSetting('streakAlerts', checked)}
+                  />
                 </div>
               </div>
               
@@ -140,7 +233,11 @@ const Settings = () => {
                       Get notified when you reach a milestone
                     </p>
                   </div>
-                  <Switch id="achievement-notifications" defaultChecked />
+                  <Switch 
+                    id="achievement-notifications" 
+                    checked={settings.achievementNotifications}
+                    onCheckedChange={(checked) => updateSetting('achievementNotifications', checked)}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -163,7 +260,7 @@ const Settings = () => {
                     <div>
                       <h4 className="font-medium">Profile</h4>
                       <p className="text-sm text-muted-foreground">
-                        Manage your profile information
+                        {user ? user.username : 'Loading...'}
                       </p>
                     </div>
                   </div>
@@ -201,6 +298,17 @@ const Settings = () => {
                   </div>
                 </div>
               </div>
+              
+              <Separator />
+              
+              <Button 
+                variant="destructive"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -222,7 +330,11 @@ const Settings = () => {
                       Break streaks if habits are not completed on their scheduled day
                     </p>
                   </div>
-                  <Switch id="streak-calculation" defaultChecked />
+                  <Switch 
+                    id="streak-calculation" 
+                    checked={settings.strictStreakCalculation}
+                    onCheckedChange={(checked) => updateSetting('strictStreakCalculation', checked)}
+                  />
                 </div>
               </div>
               
@@ -236,7 +348,11 @@ const Settings = () => {
                       Automatically archive one-time tasks after completion
                     </p>
                   </div>
-                  <Switch id="auto-archive" />
+                  <Switch 
+                    id="auto-archive" 
+                    checked={settings.autoArchive}
+                    onCheckedChange={(checked) => updateSetting('autoArchive', checked)}
+                  />
                 </div>
               </div>
               
@@ -250,7 +366,11 @@ const Settings = () => {
                       Show completed habits in your daily view
                     </p>
                   </div>
-                  <Switch id="default-view" defaultChecked />
+                  <Switch 
+                    id="default-view" 
+                    checked={settings.showCompleted}
+                    onCheckedChange={(checked) => updateSetting('showCompleted', checked)}
+                  />
                 </div>
               </div>
             </CardContent>

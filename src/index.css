@@ -97,7 +97,7 @@
   }
 
   .streak-card {
-    @apply relative bg-card rounded-xl border transition-all 
+    @apply relative bg-card rounded-xl border-2 transition-all 
            hover:-translate-y-1 duration-300;
   }
 
@@ -107,7 +107,7 @@
   }
 
   .placeholder-card {
-    @apply flex flex-col items-center justify-center p-4 border border-dashed 
+    @apply flex flex-col items-center justify-center p-4 border-2 border-dashed 
            rounded-xl bg-secondary/50 hover:bg-secondary/80 cursor-pointer 
            transition-all duration-300 ease-in-out;
   }
@@ -177,7 +177,7 @@
 
 /* Fix card appearance */
 .card {
-  @apply border shadow-none;
+  @apply border;
 }
 
 /* Custom scrollbar */
@@ -232,11 +232,6 @@
   @apply truncate;
 }
 
-/* Remove this circular dependency and use the utility class directly */
-/* .break-words {
-  @apply break-words;
-} */
-
 /* Ensure buttons don't overlap with content */
 .button-container {
   @apply flex flex-wrap gap-2;
@@ -245,4 +240,19 @@
 /* Fix for mobile menu button */
 .mobile-menu-button {
   @apply fixed top-4 left-4 z-50;
+}
+
+/* Fix for reduce animations setting */
+.reduce-animations * {
+  @apply transition-none !important transform-none !important animate-none !important;
+}
+
+/* Auth styles */
+.auth-card {
+  @apply max-w-md mx-auto;
+}
+
+/* Layout fixes */
+.content-wrapper {
+  @apply p-4 md:p-6 lg:p-8;
 }

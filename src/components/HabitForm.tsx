@@ -105,6 +105,13 @@ const HabitForm: React.FC<HabitFormProps> = ({
     }
   }, [defaultValues, form]);
 
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+    }
+  }, [open, form]);
+
   const handleSubmit = (values: HabitFormValues) => {
     onSubmit(values);
     form.reset();

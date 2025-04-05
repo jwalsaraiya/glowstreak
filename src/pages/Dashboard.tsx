@@ -1,10 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, isSameDay } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
 import CalendarView from '@/components/CalendarView';
-import { Plus, CalendarPlus, Calendar as CalendarIcon } from 'lucide-react';
+import WeeklyDateBar from '@/components/WeeklyDateBar';
+import { Plus, CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,165 +20,65 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Badge } from '@/components/ui/badge';
 
-interface DashboardProps {
-  selectedDate?: Date;
-  onDateSelect?: (date: Date) => void;
-  onCreateOneTime?: () => void;
+interface UserData {
+  habits: any[];
+  events: any[];
 }
 
-const mockHabits = [
-  {
-    id: '1',
-    title: 'Morning Meditation',
-    description: '10 minutes of mindfulness meditation',
-    category: 'mindfulness',
-    streak: 12,
-    priority: 'high' as const,
-    isCompleted: true,
-    isOneTime: false,
-    completionDates: [new Date(), new Date(new Date().setDate(new Date().getDate() - 1))]
-  },
-  {
-    id: '2',
-    title: 'Read a Book',
-    description: 'Read for at least 30 minutes',
-    category: 'learning',
-    streak: 5,
-    priority: 'medium' as const,
-    isCompleted: false,
-    isOneTime: false,
-    completionDates: [new Date(new Date().setDate(new Date().getDate() - 1))]
-  },
-  {
-    id: '3',
-    title: 'Exercise',
-    description: '30 minutes workout',
-    category: 'fitness',
-    streak: 8,
-    priority: 'high' as const,
-    isCompleted: false,
-    isOneTime: false,
-    completionDates: []
-  },
-  {
-    id: '4',
-    title: 'Drink Water',
-    description: '8 glasses of water',
-    category: 'health',
-    streak: 15,
-    priority: 'medium' as const,
-    isCompleted: false,
-    isOneTime: false,
-    completionDates: [new Date(new Date().setDate(new Date().getDate() - 2))]
-  },
-  {
-    id: '5',
-    title: 'Dentist Appointment',
-    description: 'Check up and cleaning',
-    category: 'health',
-    priority: 'high' as const,
-    isCompleted: false,
-    isOneTime: true,
-    dueDate: new Date(new Date().setDate(new Date().getDate() + 2)),
-    completionDates: []
-  },
-];
-
-const mockEvents = [
-  {
-    date: new Date(),
-    type: 'habit' as const,
-    title: 'Morning Meditation',
-    id: 'event-1',
-    isCompleted: true
-  },
-  {
-    date: new Date(),
-    type: 'habit' as const,
-    title: 'Read a Book',
-    id: 'event-2',
-    isCompleted: false
-  },
-  {
-    date: new Date(),
-    type: 'event' as const,
-    title: 'Meeting',
-    id: 'event-3',
-    isCompleted: false
-  },
-  {
-    date: new Date(new Date().setDate(new Date().getDate() + 1)),
-    type: 'habit' as const,
-    title: 'Exercise',
-    id: 'event-4',
-    isCompleted: false
-  },
-  {
-    date: new Date(new Date().setDate(new Date().getDate() + 2)),
-    type: 'event' as const,
-    title: 'Dentist',
-    id: 'event-5',
-    isCompleted: false
-  },
-];
-
-const mockStreaks = [
-  {
-    name: 'Morning Meditation',
-    currentStreak: 12,
-    longestStreak: 15,
-    completion: 90,
-  },
-  {
-    name: 'Read a Book',
-    currentStreak: 5,
-    longestStreak: 7,
-    completion: 75,
-  },
-  {
-    name: 'Exercise',
-    currentStreak: 8,
-    longestStreak: 12,
-    completion: 80,
-  },
-];
-
-interface CalendarEvent {
-  id: string;
-  date: Date;
-  type: 'habit' | 'event';
-  title: string;
-  isCompleted?: boolean;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ 
-  selectedDate: propSelectedDate, 
-  onDateSelect, 
-  onCreateOneTime 
-}) => {
-  const [habits, setHabits] = useState(mockHabits);
+const Dashboard: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+  const [habits, setHabits] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isOneTimeTask, setIsOneTimeTask] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  const [selectedDate, setSelectedDate] = useState<Date>(propSelectedDate || new Date());
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(mockEvents);
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Load user data from localStorage
+  useEffect(() => {
+    if (user) {
+      const userData = localStorage.getItem(`userData_${user.id}`);
+      if (userData) {
+        const parsedData: UserData = JSON.parse(userData);
+        setHabits(parsedData.habits || []);
+        setEvents(parsedData.events || []);
+      }
+    }
+  }, [user]);
+
+  // Save user data to localStorage whenever habits or events change
+  useEffect(() => {
+    if (user) {
+      const userData: UserData = {
+        habits,
+        events
+      };
+      localStorage.setItem(`userData_${user.id}`, JSON.stringify(userData));
+    }
+  }, [habits, events, user]);
 
   const filteredHabits = habits.filter(habit => {
     if (habit.isOneTime) {
-      return habit.dueDate && isSameDay(habit.dueDate, selectedDate);
+      return habit.dueDate && isSameDay(new Date(habit.dueDate), selectedDate);
     } else {
       return true;
     }
   });
 
   const habitsWithDateStatus = filteredHabits.map(habit => {
-    const isCompletedOnSelectedDate = habit.completionDates?.some(date => 
-      isSameDay(date, selectedDate)
+    const isCompletedOnSelectedDate = habit.completionDates?.some((dateStr: string) => 
+      isSameDay(new Date(dateStr), selectedDate)
     ) || false;
 
     return {
@@ -183,97 +87,124 @@ const Dashboard: React.FC<DashboardProps> = ({
     };
   });
 
+  const calendarEvents = [
+    ...habits.flatMap(habit => 
+      habit.completionDates?.map((dateStr: string) => ({
+        date: new Date(dateStr),
+        type: 'habit' as const,
+        title: habit.title,
+        id: `habit-${habit.id}-${dateStr}`,
+        isCompleted: true
+      })) || []
+    ),
+    ...habits.filter(habit => habit.isOneTime).map(habit => ({
+      date: new Date(habit.dueDate),
+      type: 'habit' as const,
+      title: habit.title,
+      id: `habit-${habit.id}`,
+      isCompleted: habit.completionDates?.some((dateStr: string) => 
+        isSameDay(new Date(dateStr), new Date(habit.dueDate))
+      )
+    })),
+    ...events.map(event => ({
+      date: new Date(event.date),
+      type: 'event' as const,
+      title: event.title,
+      id: `event-${event.id}`,
+      isCompleted: event.isCompleted
+    }))
+  ];
+
   const handleCreateHabit = (values: any) => {
+    const newId = habits.length > 0 
+      ? Math.max(...habits.map(h => parseInt(h.id))) + 1 
+      : 1;
+    
     const newHabit = {
-      id: (habits.length + 1).toString(),
+      id: newId.toString(),
       title: values.title,
       description: values.description || '',
       category: values.category,
       streak: 0,
       priority: values.priority,
       isCompleted: false,
-      isOneTime: isOneTimeTask,
-      completionDates: [] as Date[],
-      ...(isOneTimeTask ? { dueDate: values.date || new Date() } : {})
+      isOneTime: values.isOneTime,
+      completionDates: [] as string[],
+      ...(values.isOneTime ? { dueDate: values.startDate.toISOString() } : {})
     };
 
     setHabits([...habits, newHabit]);
     
+    toast({
+      title: values.isOneTime ? "Task Created" : "Habit Created",
+      description: `${values.title} has been added to your ${values.isOneTime ? 'tasks' : 'habits'}.`,
+    });
+  };
+
+  const handleCreateEvent = (values: any) => {
+    const newId = events.length > 0 
+      ? Math.max(...events.map(e => parseInt(e.id))) + 1 
+      : 1;
+    
     const newEvent = {
-      id: `event-${calendarEvents.length + 1}`,
-      date: isOneTimeTask ? (values.date || new Date()) : new Date(),
-      type: 'habit' as const,
+      id: newId.toString(),
       title: values.title,
+      description: values.description || '',
+      date: values.startDate.toISOString(),
       isCompleted: false
     };
-    
-    setCalendarEvents([...calendarEvents, newEvent]);
+
+    setEvents([...events, newEvent]);
     
     toast({
-      title: isOneTimeTask ? "Task Created" : "Habit Created",
-      description: `${values.title} has been added to your ${isOneTimeTask ? 'tasks' : 'habits'}.`,
+      title: "Event Created",
+      description: `${values.title} has been added to your calendar.`,
     });
-    setIsOneTimeTask(false);
   };
 
   const toggleHabitCompletion = (id: string) => {
     setHabits(habits.map(habit => {
       if (habit.id === id) {
-        const isCompleted = !habit.completionDates?.some(date => isSameDay(date, selectedDate));
+        const dateStr = selectedDate.toISOString();
+        const isCompleted = !habit.completionDates?.some((d: string) => 
+          isSameDay(new Date(d), selectedDate)
+        );
         
         return { 
           ...habit, 
           completionDates: isCompleted ? 
-            [...(habit.completionDates || []), new Date(selectedDate)] : 
-            (habit.completionDates || []).filter(date => !isSameDay(date, selectedDate))
+            [...(habit.completionDates || []), dateStr] : 
+            (habit.completionDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
         };
       }
       return habit;
     }));
     
-    setCalendarEvents(calendarEvents.map(event => {
-      const relatedHabit = habits.find(h => h.title === event.title);
-      if (relatedHabit && relatedHabit.id === id && isSameDay(event.date, selectedDate)) {
-        return {
-          ...event,
-          isCompleted: !event.isCompleted
-        };
-      }
-      return event;
-    }));
+    toast({
+      title: "Status Updated",
+      description: "Your habit completion status has been updated.",
+    });
   };
 
   const handleDeleteHabit = () => {
     if (habitToDelete) {
-      const habitToRemove = habits.find(h => h.id === habitToDelete);
       setHabits(habits.filter(habit => habit.id !== habitToDelete));
       
-      setCalendarEvents(calendarEvents.filter(event => 
-        event.title !== habitToRemove?.title
-      ));
-      
       toast({
-        title: habitToRemove?.isOneTime ? "Task Deleted" : "Habit Deleted",
-        description: `${habitToRemove?.title} has been removed.`,
+        title: "Habit Deleted",
+        description: "The habit has been removed.",
       });
       setHabitToDelete(null);
     }
   };
 
   const openTaskForm = (isOneTime: boolean) => {
-    if (isOneTime && onCreateOneTime) {
-      onCreateOneTime();
-    } else {
-      setIsOneTimeTask(isOneTime);
-      setIsFormOpen(true);
-    }
+    setIsOneTimeTask(isOneTime);
+    setIsFormOpen(true);
   };
 
   const handleDateSelection = (date: Date) => {
     setSelectedDate(date);
-    if (onDateSelect) {
-      onDateSelect(date);
-    }
   };
 
   return (
@@ -281,17 +212,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="mb-4 md:mb-8 flex items-center justify-between flex-wrap gap-3 dashboard-header">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
-          <div className="flex items-center">
-            <CalendarIcon className="h-4 w-4 mr-1" />
-            <p className="text-muted-foreground">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
-          </div>
+          <p className="text-muted-foreground">
+            {user ? `Welcome, ${user.username}` : 'Loading...'}
+          </p>
         </div>
-        
-        {!isSameDay(selectedDate, new Date()) && (
-          <Badge variant="outline" className="cursor-pointer" onClick={() => handleDateSelection(new Date())}>
-            View Today
-          </Badge>
-        )}
+      </div>
+
+      {/* Weekly date bar */}
+      <div className="mb-6">
+        <WeeklyDateBar 
+          selectedDate={selectedDate} 
+          onDateSelect={handleDateSelection} 
+        />
       </div>
 
       <div className="mb-6 md:mb-8">
@@ -327,7 +259,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               title={habit.title}
               description={habit.description}
               category={habit.category}
-              streak={'streak' in habit ? habit.streak || 0 : 0}
+              streak={habit.streak || 0}
               priority={habit.priority}
               isCompleted={habit.isCompleted}
               isOneTime={habit.isOneTime}
@@ -336,7 +268,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             />
           ))}
           <div 
-            className="placeholder-card flex items-center justify-center h-full min-h-[140px]"
+            className="placeholder-card flex items-center justify-center h-full min-h-[140px] border-2"
             onClick={() => openTaskForm(false)}
           >
             <Plus className="h-6 w-6 text-muted-foreground mb-2" />
@@ -351,6 +283,23 @@ const Dashboard: React.FC<DashboardProps> = ({
           events={calendarEvents} 
           onDateSelect={handleDateSelection}
           selectedDate={selectedDate}
+          onEventClick={(eventId) => {
+            // Handle event click
+            const habitId = eventId.startsWith('habit-') 
+              ? eventId.split('-')[1] 
+              : null;
+            
+            if (habitId) {
+              const habit = habits.find(h => h.id === habitId);
+              if (habit) {
+                toggleHabitCompletion(habitId);
+              }
+            }
+          }}
+          onAddEvent={(date) => {
+            setSelectedDate(date);
+            openTaskForm(true);
+          }}
         />
       </div>
 
