@@ -16,6 +16,7 @@ import Navbar from "./components/Navbar";
 import HabitForm from "./components/HabitForm";
 import { ThemeProvider } from "./hooks/use-theme";
 import { AuthProvider, useAuth } from "./hooks/use-auth";
+import { ItemType } from "./components/HabitForm";
 
 const queryClient = new QueryClient();
 
@@ -36,13 +37,28 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppContent: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
+  const [formType, setFormType] = React.useState<ItemType>('habit');
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
   const { isAuthenticated } = useAuth();
 
-  const handleCreateHabit = (values: any) => {
+  const handleCreateItem = (values: any) => {
+    let message = '';
+    
+    switch(values.itemType) {
+      case 'habit':
+        message = 'Habit created successfully!';
+        break;
+      case 'event':
+        message = 'Event added to your calendar!';
+        break;
+      case 'task':
+        message = 'Task created successfully!';
+        break;
+    }
+    
     toast({
-      title: `${values.isOneTime ? "Task" : "Habit"} created successfully!`,
-      description: `Your ${values.isOneTime ? "task" : "habit"} has been added to your schedule.`,
+      title: message,
+      description: `${values.title} has been added to your schedule.`,
     });
     setIsFormOpen(false);
   };
@@ -51,7 +67,8 @@ const AppContent: React.FC = () => {
     setSelectedDate(date);
   };
 
-  const openHabitForm = () => {
+  const openHabitForm = (type: ItemType = 'habit') => {
+    setFormType(type);
     setIsFormOpen(true);
   };
 
@@ -67,12 +84,18 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <Navbar onCreateHabit={openHabitForm} />
+      <Navbar onCreateHabit={() => openHabitForm('habit')} onCreateOneTime={() => openHabitForm('task')} onCreateEvent={() => openHabitForm('event')} />
       <main className="flex-1 overflow-y-auto pb-16 pt-2">
         <Routes>
           <Route path="/" element={
             <ProtectedRoute>
-              <Dashboard />
+              <Dashboard 
+                onAddHabit={() => openHabitForm('habit')}
+                onAddTask={() => openHabitForm('task')}
+                onAddEvent={() => openHabitForm('event')}
+                onDateSelect={handleDateSelect}
+                selectedDate={selectedDate}
+              />
             </ProtectedRoute>
           } />
           <Route path="/calendar" element={
@@ -80,6 +103,9 @@ const AppContent: React.FC = () => {
               <Calendar 
                 selectedDate={selectedDate}
                 onDateSelect={handleDateSelect}
+                onCreateHabit={() => openHabitForm('habit')}
+                onCreateOneTime={() => openHabitForm('task')}
+                onCreateEvent={() => openHabitForm('event')}
               />
             </ProtectedRoute>
           } />
@@ -100,9 +126,9 @@ const AppContent: React.FC = () => {
       <HabitForm
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
-        onSubmit={handleCreateHabit}
+        onSubmit={handleCreateItem}
         defaultValues={{
-          isOneTime: false,
+          itemType: formType,
           date: selectedDate
         }}
       />

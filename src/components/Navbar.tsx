@@ -36,9 +36,11 @@ const NavItem: React.FC<NavItemProps> = ({ icon: Icon, label, to, active, compac
 
 interface NavbarProps {
   onCreateHabit: () => void;
+  onCreateOneTime: () => void;
+  onCreateEvent: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onCreateHabit }) => {
+const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreateEvent }) => {
   const location = useLocation();
   const currentPath = location.pathname;
   const isMobile = useIsMobile();
@@ -54,9 +56,9 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit }) => {
     "h-screen border-r flex flex-col justify-between p-2 md:p-4 transition-all duration-300",
     isMobile ? (
       isOpen 
-        ? "fixed inset-y-0 left-0 w-64 z-50 bg-background shadow-lg transform translate-x-0" 
-        : "fixed inset-y-0 left-0 w-64 z-50 bg-background shadow-lg transform -translate-x-full"
-    ) : "w-16 md:w-64 relative"
+        ? "fixed inset-y-0 right-0 w-64 z-50 bg-background shadow-lg transform translate-x-0" 
+        : "fixed inset-y-0 right-0 w-64 z-50 bg-background shadow-lg transform translate-x-full"
+    ) : "w-16 md:w-64 relative ml-auto"
   );
 
   return (
@@ -65,7 +67,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit }) => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="fixed top-4 left-4 z-40 md:hidden bg-background/80 backdrop-blur-sm border"
+          className="fixed top-4 right-4 z-40 md:hidden bg-background/80 backdrop-blur-sm border"
           onClick={toggleMenu}
         >
           {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -97,7 +99,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit }) => {
             
             <Button
               onClick={() => {
-                onCreateHabit();
+                onCreateOneTime();
                 closeMenu();
               }}
               variant="outline"
@@ -105,6 +107,18 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit }) => {
             >
               <Plus className="h-5 w-5" />
               {(!isMobile || isOpen) && <span className="hidden md:inline">One-time Task</span>}
+            </Button>
+            
+            <Button
+              onClick={() => {
+                onCreateEvent();
+                closeMenu();
+              }}
+              variant="secondary"
+              className="w-full gap-1 md:gap-2 px-2 md:px-4"
+            >
+              <Calendar className="h-5 w-5" />
+              {(!isMobile || isOpen) && <span className="hidden md:inline">New Event</span>}
             </Button>
           </div>
 

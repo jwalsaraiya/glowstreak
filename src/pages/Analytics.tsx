@@ -1,43 +1,37 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, CheckCheck, Clock, Flame, PieChart as PieChartIcon, TrendingUp } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { Calendar, CheckCheck, Clock, Flame, PieChart as PieChartIcon, TrendingUp, ArrowRight, ArrowUp, Zap } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-
-// Mock data
-const weeklyCompletionData = [
-  { name: 'Mon', value: 90 },
-  { name: 'Tue', value: 80 },
-  { name: 'Wed', value: 100 },
-  { name: 'Thu', value: 70 },
-  { name: 'Fri', value: 85 },
-  { name: 'Sat', value: 75 },
-  { name: 'Sun', value: 95 },
-];
-
-const categoryData = [
-  { name: 'Health', value: 35 },
-  { name: 'Fitness', value: 25 },
-  { name: 'Learning', value: 20 },
-  { name: 'Mindfulness', value: 15 },
-  { name: 'Productivity', value: 5 },
-];
+import { useAuth } from '@/hooks/use-auth';
+import { generateAnalyticsData } from '@/utils/analyticsData';
 
 const COLORS = ['#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4', '#ccfbf1'];
 
-const habitStrengthData = [
-  { name: 'Morning Meditation', value: 90, streak: 12 },
-  { name: 'Read a Book', value: 75, streak: 5 },
-  { name: 'Exercise', value: 80, streak: 8 },
-  { name: 'Drink Water', value: 95, streak: 15 },
-  { name: 'Journal', value: 60, streak: 3 },
-];
-
 const AnalyticsPage: React.FC = () => {
+  const { user } = useAuth();
+  const [range, setRange] = useState<'week' | 'month' | 'year'>('week');
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      const data = generateAnalyticsData(user.id);
+      setAnalyticsData(data);
+    }
+  }, [user, range]);
+
+  if (!analyticsData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p>Loading analytics data...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 max-w-7xl">
       <div className="mb-8">
@@ -54,9 +48,13 @@ const AnalyticsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold mb-2">85%</div>
+            <div className="text-4xl font-bold mb-2">{analyticsData.overallCompletionRate}%</div>
             <p className="text-sm text-muted-foreground mb-4">Overall habit completion rate</p>
-            <Progress value={85} className="h-2" />
+            <Progress value={analyticsData.overallCompletionRate} className="h-2" />
+            <p className="text-sm text-muted-foreground mt-2 flex items-center">
+              <ArrowUp className="h-3 w-3 mr-1 text-primary" />
+              <span>7% better than last week</span>
+            </p>
           </CardContent>
         </Card>
         
@@ -68,9 +66,13 @@ const AnalyticsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold mb-2">15 days</div>
-            <p className="text-sm text-muted-foreground mb-4">Drink Water</p>
-            <Progress value={75} className="h-2" />
+            <div className="text-4xl font-bold mb-2">{analyticsData.longestStreakHabit.streak} days</div>
+            <p className="text-sm text-muted-foreground mb-4">{analyticsData.longestStreakHabit.name}</p>
+            <Progress value={(analyticsData.longestStreakHabit.streak / 30) * 100} className="h-2" />
+            <p className="text-sm text-muted-foreground mt-2 flex items-center">
+              <Zap className="h-3 w-3 mr-1 text-primary" />
+              <span>Keep going to reach 30 days!</span>
+            </p>
           </CardContent>
         </Card>
         
@@ -82,9 +84,13 @@ const AnalyticsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold mb-2">72 min</div>
+            <div className="text-4xl font-bold mb-2">{analyticsData.dailyTimeSpent} min</div>
             <p className="text-sm text-muted-foreground mb-4">Spent on habits daily</p>
-            <Progress value={60} className="h-2" />
+            <Progress value={(analyticsData.dailyTimeSpent / 120) * 100} className="h-2" />
+            <p className="text-sm text-muted-foreground mt-2 flex items-center">
+              <ArrowRight className="h-3 w-3 mr-1 text-primary" />
+              <span>Consistent with your goals</span>
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -92,21 +98,36 @@ const AnalyticsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-semibold flex items-center">
-              <TrendingUp className="mr-2 h-5 w-5" />
-              Weekly Completion
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-xl font-semibold flex items-center">
+                <TrendingUp className="mr-2 h-5 w-5" />
+                Completion Trend
+              </CardTitle>
+              <Select 
+                value={range} 
+                onValueChange={(value: 'week' | 'month' | 'year') => setRange(value)}
+              >
+                <SelectTrigger className="w-32 h-8">
+                  <SelectValue placeholder="Select range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">Last Week</SelectItem>
+                  <SelectItem value="month">Last Month</SelectItem>
+                  <SelectItem value="year">Last Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={weeklyCompletionData}
+                  data={analyticsData.weeklyCompletionData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" />
-                  <YAxis unit="%" />
+                  <YAxis unit="%" domain={[0, 100]} />
                   <Tooltip
                     formatter={(value) => [`${value}%`, 'Completion Rate']}
                     contentStyle={{ borderRadius: '0.5rem' }}
@@ -135,7 +156,7 @@ const AnalyticsPage: React.FC = () => {
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={categoryData}
+                      data={analyticsData.categoryData}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -145,7 +166,7 @@ const AnalyticsPage: React.FC = () => {
                       dataKey="value"
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     >
-                      {categoryData.map((entry, index) => (
+                      {analyticsData.categoryData.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -167,7 +188,7 @@ const AnalyticsPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {habitStrengthData.map((habit, index) => (
+            {analyticsData.habitStrengthData.map((habit: any, index: number) => (
               <div key={index} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <div className="font-medium">{habit.name}</div>

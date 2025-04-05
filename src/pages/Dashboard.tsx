@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, isSameDay } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
-import CalendarView from '@/components/CalendarView';
 import WeeklyDateBar from '@/components/WeeklyDateBar';
-import { Plus, CalendarPlus } from 'lucide-react';
+import { CalendarPlus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -23,19 +23,32 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface UserData {
   habits: any[];
   events: any[];
+  tasks: any[];
 }
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onAddHabit: () => void;
+  onAddTask: () => void;
+  onAddEvent: () => void;
+  onDateSelect: (date: Date) => void;
+  selectedDate: Date;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ 
+  onAddHabit,
+  onAddTask,
+  onAddEvent,
+  onDateSelect,
+  selectedDate
+}) => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [habits, setHabits] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isOneTimeTask, setIsOneTimeTask] = useState(false);
-  const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [itemToDelete, setItemToDelete] = useState<{id: string, type: 'habit' | 'event' | 'task'} | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -50,6 +63,7 @@ const Dashboard: React.FC = () => {
         const parsedData: UserData = JSON.parse(userData);
         setHabits(parsedData.habits || []);
         setEvents(parsedData.events || []);
+        setTasks(parsedData.tasks || []);
       }
     }
   }, [user]);
@@ -58,149 +72,97 @@ const Dashboard: React.FC = () => {
     if (user) {
       const userData: UserData = {
         habits,
-        events
+        events,
+        tasks
       };
       localStorage.setItem(`userData_${user.id}`, JSON.stringify(userData));
     }
-  }, [habits, events, user]);
+  }, [habits, events, tasks, user]);
 
-  const filteredHabits = habits.filter(habit => {
-    if (habit.isOneTime) {
-      return habit.dueDate && isSameDay(new Date(habit.dueDate), selectedDate);
-    } else {
-      return true;
-    }
-  });
+  // Filter items for the selected date
+  const filteredItems = [
+    ...habits.map(habit => ({ ...habit, itemType: 'habit' as const })),
+    ...events
+      .filter(event => event.date && isSameDay(new Date(event.date), selectedDate))
+      .map(event => ({ ...event, itemType: 'event' as const })),
+    ...tasks
+      .filter(task => task.date && isSameDay(new Date(task.date), selectedDate))
+      .map(task => ({ ...task, itemType: 'task' as const }))
+  ];
 
-  const habitsWithDateStatus = filteredHabits.map(habit => {
-    const isCompletedOnSelectedDate = habit.completionDates?.some((dateStr: string) => 
+  const itemsWithCompletionStatus = filteredItems.map(item => {
+    const isCompletedOnSelectedDate = item.completionDates?.some((dateStr: string) => 
       isSameDay(new Date(dateStr), selectedDate)
     ) || false;
 
     return {
-      ...habit,
+      ...item,
       isCompleted: isCompletedOnSelectedDate
     };
   });
 
-  const calendarEvents = [
-    ...habits.flatMap(habit => 
-      habit.completionDates?.map((dateStr: string) => ({
-        date: new Date(dateStr),
-        type: 'habit' as const,
-        title: habit.title,
-        id: `habit-${habit.id}-${dateStr}`,
-        isCompleted: true
-      })) || []
-    ),
-    ...habits.filter(habit => habit.isOneTime).map(habit => ({
-      date: new Date(habit.dueDate),
-      type: 'habit' as const,
-      title: habit.title,
-      id: `habit-${habit.id}`,
-      isCompleted: habit.completionDates?.some((dateStr: string) => 
-        isSameDay(new Date(dateStr), new Date(habit.dueDate))
-      )
-    })),
-    ...events.map(event => ({
-      date: new Date(event.date),
-      type: 'event' as const,
-      title: event.title,
-      id: `event-${event.id}`,
-      isCompleted: event.isCompleted
-    }))
-  ];
-
-  const handleCreateHabit = (values: any) => {
-    const newId = habits.length > 0 
-      ? Math.max(...habits.map(h => parseInt(h.id))) + 1 
-      : 1;
-    
-    const newHabit = {
-      id: newId.toString(),
-      title: values.title,
-      description: values.description || '',
-      category: values.category,
-      streak: 0,
-      priority: values.priority,
-      isCompleted: false,
-      isOneTime: values.isOneTime,
-      completionDates: [] as string[],
-      ...(values.isOneTime ? { dueDate: values.startDate.toISOString() } : {})
-    };
-
-    setHabits([...habits, newHabit]);
-    
-    toast({
-      title: values.isOneTime ? "Task Created" : "Habit Created",
-      description: `${values.title} has been added to your ${values.isOneTime ? 'tasks' : 'habits'}.`,
-    });
-  };
-
-  const handleCreateEvent = (values: any) => {
-    const newId = events.length > 0 
-      ? Math.max(...events.map(e => parseInt(e.id))) + 1 
-      : 1;
-    
-    const newEvent = {
-      id: newId.toString(),
-      title: values.title,
-      description: values.description || '',
-      date: values.startDate.toISOString(),
-      isCompleted: false
-    };
-
-    setEvents([...events, newEvent]);
-    
-    toast({
-      title: "Event Created",
-      description: `${values.title} has been added to your calendar.`,
-    });
-  };
-
-  const toggleHabitCompletion = (id: string) => {
-    setHabits(habits.map(habit => {
-      if (habit.id === id) {
-        const dateStr = selectedDate.toISOString();
-        const isCompleted = !habit.completionDates?.some((d: string) => 
-          isSameDay(new Date(d), selectedDate)
-        );
-        
-        return { 
-          ...habit, 
-          completionDates: isCompleted ? 
-            [...(habit.completionDates || []), dateStr] : 
-            (habit.completionDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
-        };
-      }
-      return habit;
-    }));
+  const toggleItemCompletion = (id: string, type: 'habit' | 'event' | 'task') => {
+    if (type === 'habit') {
+      setHabits(habits.map(habit => {
+        if (habit.id === id) {
+          const dateStr = selectedDate.toISOString();
+          const isCompleted = !habit.completionDates?.some((d: string) => 
+            isSameDay(new Date(d), selectedDate)
+          );
+          
+          return { 
+            ...habit, 
+            completionDates: isCompleted ? 
+              [...(habit.completionDates || []), dateStr] : 
+              (habit.completionDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
+          };
+        }
+        return habit;
+      }));
+    } else if (type === 'event') {
+      setEvents(events.map(event => {
+        if (event.id === id) {
+          return { ...event, isCompleted: !event.isCompleted };
+        }
+        return event;
+      }));
+    } else {
+      setTasks(tasks.map(task => {
+        if (task.id === id) {
+          return { ...task, isCompleted: !task.isCompleted };
+        }
+        return task;
+      }));
+    }
     
     toast({
       title: "Status Updated",
-      description: "Your habit completion status has been updated.",
+      description: "Your completion status has been updated.",
     });
   };
 
-  const handleDeleteHabit = () => {
-    if (habitToDelete) {
-      setHabits(habits.filter(habit => habit.id !== habitToDelete));
+  const handleDeleteItem = () => {
+    if (itemToDelete) {
+      const { id, type } = itemToDelete;
+      
+      if (type === 'habit') {
+        setHabits(habits.filter(habit => habit.id !== id));
+      } else if (type === 'event') {
+        setEvents(events.filter(event => event.id !== id));
+      } else {
+        setTasks(tasks.filter(task => task.id !== id));
+      }
       
       toast({
-        title: "Habit Deleted",
-        description: "The habit has been removed.",
+        title: "Item Deleted",
+        description: `The ${type} has been removed.`,
       });
-      setHabitToDelete(null);
+      setItemToDelete(null);
     }
   };
 
-  const openTaskForm = (isOneTime: boolean) => {
-    setIsOneTimeTask(isOneTime);
-    setIsFormOpen(true);
-  };
-
   const handleDateSelection = (date: Date) => {
-    setSelectedDate(date);
+    onDateSelect(date);
   };
 
   return (
@@ -230,7 +192,7 @@ const Dashboard: React.FC = () => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => openTaskForm(true)}
+              onClick={onAddTask}
               className="gap-1"
             >
               <CalendarPlus className="h-4 w-4" />
@@ -238,7 +200,16 @@ const Dashboard: React.FC = () => {
             </Button>
             <Button
               size="sm"
-              onClick={() => openTaskForm(false)}
+              variant="secondary"
+              onClick={onAddEvent}
+              className="gap-1"
+            >
+              <CalendarPlus className="h-4 w-4" />
+              {!isMobile && "New Event"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={onAddHabit}
               className="gap-1"
             >
               <Plus className="h-4 w-4" />
@@ -248,23 +219,23 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 habit-grid">
-          {habitsWithDateStatus.map((habit) => (
+          {itemsWithCompletionStatus.map((item) => (
             <HabitCard
-              key={habit.id}
-              title={habit.title}
-              description={habit.description}
-              category={habit.category}
-              streak={habit.streak || 0}
-              priority={habit.priority}
-              isCompleted={habit.isCompleted}
-              isOneTime={habit.isOneTime}
-              onClick={() => toggleHabitCompletion(habit.id)}
-              onDelete={() => setHabitToDelete(habit.id)}
+              key={`${item.itemType}-${item.id}`}
+              title={item.title}
+              description={item.description}
+              category={item.category}
+              streak={item.streak || 0}
+              priority={item.priority}
+              isCompleted={item.isCompleted}
+              isOneTime={item.itemType !== 'habit'}
+              onClick={() => toggleItemCompletion(item.id, item.itemType)}
+              onDelete={() => setItemToDelete({ id: item.id, type: item.itemType })}
             />
           ))}
           <div 
             className="placeholder-card flex items-center justify-center h-full min-h-[140px] border-2"
-            onClick={() => openTaskForm(false)}
+            onClick={onAddHabit}
           >
             <Plus className="h-6 w-6 text-muted-foreground mb-2" />
             <span className="text-muted-foreground font-medium">Add New Habit</span>
@@ -272,7 +243,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <AlertDialog open={!!habitToDelete} onOpenChange={() => setHabitToDelete(null)}>
+      <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -282,7 +253,7 @@ const Dashboard: React.FC = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteHabit} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-destructive-foreground">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

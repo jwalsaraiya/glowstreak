@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Moon, Sun, Monitor, User, Bell, Clock, LogOut } from 'lucide-react';
+import { Moon, Sun, Monitor, User, Bell, Clock, LogOut, Calendar as CalendarIcon } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UserSettings {
-  reduceAnimations: boolean;
   compactView: boolean;
   reminderNotifications: boolean;
   streakAlerts: boolean;
@@ -23,10 +22,10 @@ interface UserSettings {
   autoArchive: boolean;
   showCompleted: boolean;
   timeZone: string;
+  firstDayOfWeek: "sunday" | "monday";
 }
 
 const defaultSettings: UserSettings = {
-  reduceAnimations: false,
   compactView: false,
   reminderNotifications: true,
   streakAlerts: true,
@@ -34,7 +33,8 @@ const defaultSettings: UserSettings = {
   strictStreakCalculation: true,
   autoArchive: false,
   showCompleted: true,
-  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  firstDayOfWeek: "sunday"
 };
 
 // List of common time zones
@@ -89,11 +89,6 @@ const Settings = () => {
   const updateSetting = (key: keyof UserSettings, value: any) => {
     setSettings(prev => {
       const newSettings = { ...prev, [key]: value };
-      
-      // Apply settings immediately
-      if (key === 'reduceAnimations') {
-        document.body.classList.toggle('reduce-animations', value);
-      }
       
       toast({
         title: "Settings updated",
@@ -165,19 +160,27 @@ const Settings = () => {
               <Separator />
               
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="reduce-animations">Reduce animations</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Disable animations for improved performance
-                    </p>
+                <div className="space-y-0.5 flex items-start flex-col">
+                  <div className="flex items-center mb-2">
+                    <CalendarIcon className="h-5 w-5 mr-2" />
+                    <h4 className="font-medium">First Day of Week</h4>
                   </div>
-                  <Switch 
-                    id="reduce-animations" 
-                    checked={settings.reduceAnimations}
-                    onCheckedChange={(checked) => updateSetting('reduceAnimations', checked)}
-                    className="switch-fix"
-                  />
+                  
+                  <Select 
+                    value={settings.firstDayOfWeek} 
+                    onValueChange={(value) => updateSetting('firstDayOfWeek', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select first day of week" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sunday">Sunday</SelectItem>
+                      <SelectItem value="monday">Monday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Choose which day should be shown as the first day of the week in calendars
+                  </p>
                 </div>
               </div>
               
@@ -195,7 +198,6 @@ const Settings = () => {
                     id="compact-view" 
                     checked={settings.compactView}
                     onCheckedChange={(checked) => updateSetting('compactView', checked)}
-                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -224,7 +226,6 @@ const Settings = () => {
                     id="reminder-notifications" 
                     checked={settings.reminderNotifications}
                     onCheckedChange={(checked) => updateSetting('reminderNotifications', checked)}
-                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -243,7 +244,6 @@ const Settings = () => {
                     id="streak-notifications" 
                     checked={settings.streakAlerts}
                     onCheckedChange={(checked) => updateSetting('streakAlerts', checked)}
-                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -262,7 +262,6 @@ const Settings = () => {
                     id="achievement-notifications" 
                     checked={settings.achievementNotifications}
                     onCheckedChange={(checked) => updateSetting('achievementNotifications', checked)}
-                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -377,7 +376,6 @@ const Settings = () => {
                     id="streak-calculation" 
                     checked={settings.strictStreakCalculation}
                     onCheckedChange={(checked) => updateSetting('strictStreakCalculation', checked)}
-                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -396,7 +394,6 @@ const Settings = () => {
                     id="auto-archive" 
                     checked={settings.autoArchive}
                     onCheckedChange={(checked) => updateSetting('autoArchive', checked)}
-                    className="switch-fix"
                   />
                 </div>
               </div>
@@ -415,7 +412,6 @@ const Settings = () => {
                     id="default-view" 
                     checked={settings.showCompleted}
                     onCheckedChange={(checked) => updateSetting('showCompleted', checked)}
-                    className="switch-fix"
                   />
                 </div>
               </div>
