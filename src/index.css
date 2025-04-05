@@ -98,7 +98,7 @@
 
   .streak-card {
     @apply relative bg-card rounded-xl border transition-all 
-           hover:-translate-y-1 duration-300;
+           hover:shadow-md hover:-translate-y-1 duration-300;
   }
 
   .streak-glow {
@@ -125,10 +125,6 @@
   
   .calendar-container {
     @apply overflow-x-auto;
-  }
-
-  main {
-    @apply pb-16; /* Space for mobile nav */
   }
 }
 
@@ -159,6 +155,11 @@
   @apply bg-primary text-primary-foreground;
 }
 
+/* Improved card shadows */
+.card-shadow {
+  @apply shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_4px_6px_-2px_rgba(0,0,0,0.03)];
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -175,40 +176,4 @@
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/30;
-}
-
-/* Mobile bottom navigation fix */
-@media (max-width: 768px) {
-  .main-content {
-    @apply pb-16;
-  }
-  
-  .bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 z-50 bg-background border-t;
-  }
-}
-
-/* Date picker styles */
-.rdp-day_selected {
-  @apply bg-primary text-primary-foreground !important;
-}
-
-.rdp-day_today {
-  @apply font-bold !important;
-}
-
-/* Badge styles */
-.badge-container {
-  @apply flex flex-wrap gap-1;
-}
-
-/* Make form elements more mobile-friendly */
-@media (max-width: 640px) {
-  .form-row {
-    @apply flex-col;
-  }
-  
-  .form-control {
-    @apply w-full;
-  }
 }
