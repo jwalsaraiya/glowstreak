@@ -63,7 +63,9 @@ const HabitCard: React.FC<HabitCardProps> = ({
               {title}
             </h3>
             {description && (
-              <p className="text-sm text-muted-foreground line-clamp-2 break-words">{description}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2 break-words">
+                {description}
+              </p>
             )}
           </div>
           {isCompleted ? (

@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -231,9 +232,10 @@
   @apply truncate;
 }
 
-.break-words {
+/* Remove this circular dependency and use the utility class directly */
+/* .break-words {
   @apply break-words;
-}
+} */
 
 /* Ensure buttons don't overlap with content */
 .button-container {
