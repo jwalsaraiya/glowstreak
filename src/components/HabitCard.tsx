@@ -47,7 +47,7 @@ const HabitCard: React.FC<HabitCardProps> = ({
   return (
     <Card
       className={cn(
-        "relative h-full transition-all duration-300 border",
+        "relative h-full transition-all duration-300 border shadow-none",
         isCompleted ? "opacity-75 bg-secondary/50" : "bg-card",
         hasLongStreak && !isCompleted ? "streak-card" : "",
         "hover:cursor-pointer hover:-translate-y-1",
@@ -58,25 +58,25 @@ const HabitCard: React.FC<HabitCardProps> = ({
       {hasLongStreak && !isCompleted && <div className="streak-glow"></div>}
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <div className="flex flex-col space-y-1 pr-8">
-            <h3 className={cn("font-medium text-lg", isCompleted && "line-through opacity-70")}>
+          <div className="flex flex-col space-y-1 pr-10">
+            <h3 className={cn("font-medium text-lg truncate max-w-full", isCompleted && "line-through opacity-70")}>
               {title}
             </h3>
             {description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2 break-words">{description}</p>
             )}
           </div>
           {isCompleted ? (
-            <CheckCircle className="h-6 w-6 text-primary" />
+            <CheckCircle className="h-6 w-6 text-primary shrink-0" />
           ) : (
-            <div className="flex items-center">
+            <div className="flex items-center shrink-0">
               <Clock className="h-5 w-5 text-muted-foreground mr-1" />
-              <span className="text-sm text-muted-foreground">Today</span>
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Today</span>
             </div>
           )}
         </div>
         
-        <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-wrap justify-between items-center mt-4 gap-2">
           <Badge className="rounded-full text-xs">{category}</Badge>
           <div className="flex flex-wrap gap-2 justify-end">
             <Badge variant="outline" className={cn("rounded-full text-xs", priorityClasses[priority])}>

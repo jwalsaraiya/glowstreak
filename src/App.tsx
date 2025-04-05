@@ -49,7 +49,7 @@ const App: React.FC = () => {
           <BrowserRouter>
             <div className="flex h-screen overflow-hidden">
               <Navbar onCreateHabit={() => handleCreateHabit(false)} />
-              <main className="flex-1 overflow-y-auto pb-16">
+              <main className="flex-1 overflow-y-auto pb-16 pt-2">
                 <Routes>
                   <Route path="/" element={
                     <Dashboard 

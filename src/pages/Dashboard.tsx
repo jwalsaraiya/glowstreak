@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, isSameDay } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
 import CalendarView from '@/components/CalendarView';
-import StreakAnalytics from '@/components/StreakAnalytics';
 import { Plus, CalendarPlus, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -166,19 +164,14 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date>(propSelectedDate || new Date());
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(mockEvents);
 
-  // Filter habits based on the selected date
   const filteredHabits = habits.filter(habit => {
     if (habit.isOneTime) {
-      // For one-time tasks, check if the due date matches
       return habit.dueDate && isSameDay(habit.dueDate, selectedDate);
     } else {
-      // For recurring habits, they should appear every day
-      // Show as completed only if completed on the selected date
       return true;
     }
   });
 
-  // Update habit completion status based on the selected date
   const habitsWithDateStatus = filteredHabits.map(habit => {
     const isCompletedOnSelectedDate = habit.completionDates?.some(date => 
       isSameDay(date, selectedDate)
@@ -206,7 +199,6 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     setHabits([...habits, newHabit]);
     
-    // Add to calendar events
     const newEvent = {
       id: `event-${calendarEvents.length + 1}`,
       date: isOneTimeTask ? (values.date || new Date()) : new Date(),
@@ -239,7 +231,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       return habit;
     }));
     
-    // Update calendar events
     setCalendarEvents(calendarEvents.map(event => {
       const relatedHabit = habits.find(h => h.title === event.title);
       if (relatedHabit && relatedHabit.id === id && isSameDay(event.date, selectedDate)) {
@@ -257,7 +248,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       const habitToRemove = habits.find(h => h.id === habitToDelete);
       setHabits(habits.filter(habit => habit.id !== habitToDelete));
       
-      // Remove from calendar events
       setCalendarEvents(calendarEvents.filter(event => 
         event.title !== habitToRemove?.title
       ));
@@ -304,60 +294,54 @@ const Dashboard: React.FC<DashboardProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-        <div className="md:col-span-2">
-          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-            <h2 className="text-xl font-semibold">
-              {isSameDay(selectedDate, new Date()) ? "Today's Activities" : `Activities for ${format(selectedDate, 'MMM d')}`}
-            </h2>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openTaskForm(true)}
-                className="gap-1"
-              >
-                <CalendarPlus className="h-4 w-4" />
-                {!isMobile && "One-time Task"}
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => openTaskForm(false)}
-                className="gap-1"
-              >
-                <Plus className="h-4 w-4" />
-                {!isMobile && "New Habit"}
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 habit-grid">
-            {habitsWithDateStatus.map((habit) => (
-              <HabitCard
-                key={habit.id}
-                title={habit.title}
-                description={habit.description}
-                category={habit.category}
-                streak={habit.streak || 0}
-                priority={habit.priority}
-                isCompleted={habit.isCompleted}
-                isOneTime={habit.isOneTime}
-                onClick={() => toggleHabitCompletion(habit.id)}
-                onDelete={() => setHabitToDelete(habit.id)}
-              />
-            ))}
-            <div 
-              className="placeholder-card flex items-center justify-center h-full min-h-[140px]"
-              onClick={() => openTaskForm(false)}
+      <div className="mb-6 md:mb-8">
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+          <h2 className="text-xl font-semibold">
+            {isSameDay(selectedDate, new Date()) ? "Today's Activities" : `Activities for ${format(selectedDate, 'MMM d')}`}
+          </h2>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openTaskForm(true)}
+              className="gap-1"
             >
-              <Plus className="h-6 w-6 text-muted-foreground mb-2" />
-              <span className="text-muted-foreground font-medium">Add New Habit</span>
-            </div>
+              <CalendarPlus className="h-4 w-4" />
+              {!isMobile && "One-time Task"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => openTaskForm(false)}
+              className="gap-1"
+            >
+              <Plus className="h-4 w-4" />
+              {!isMobile && "New Habit"}
+            </Button>
           </div>
         </div>
 
-        <div className="hidden md:block">
-          <StreakAnalytics streaks={mockStreaks} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 habit-grid">
+          {habitsWithDateStatus.map((habit) => (
+            <HabitCard
+              key={habit.id}
+              title={habit.title}
+              description={habit.description}
+              category={habit.category}
+              streak={'streak' in habit ? habit.streak || 0 : 0}
+              priority={habit.priority}
+              isCompleted={habit.isCompleted}
+              isOneTime={habit.isOneTime}
+              onClick={() => toggleHabitCompletion(habit.id)}
+              onDelete={() => setHabitToDelete(habit.id)}
+            />
+          ))}
+          <div 
+            className="placeholder-card flex items-center justify-center h-full min-h-[140px]"
+            onClick={() => openTaskForm(false)}
+          >
+            <Plus className="h-6 w-6 text-muted-foreground mb-2" />
+            <span className="text-muted-foreground font-medium">Add New Habit</span>
+          </div>
         </div>
       </div>
 

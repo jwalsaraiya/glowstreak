@@ -52,7 +52,7 @@ const Navbar: React.FC<{ onCreateHabit: () => void }> = ({ onCreateHabit }) => {
       isOpen 
         ? "fixed inset-y-0 left-0 w-64 z-50 bg-background shadow-lg transform translate-x-0" 
         : "fixed inset-y-0 left-0 w-64 z-50 bg-background shadow-lg transform -translate-x-full"
-    ) : "w-auto md:w-64 relative"
+    ) : "w-16 md:w-64 relative"
   );
 
   return (
@@ -61,7 +61,7 @@ const Navbar: React.FC<{ onCreateHabit: () => void }> = ({ onCreateHabit }) => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="fixed top-2 left-2 z-50 md:hidden"
+          className="fixed top-4 left-4 z-40 md:hidden bg-background/80 backdrop-blur-sm border"
           onClick={toggleMenu}
         >
           {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -75,7 +75,7 @@ const Navbar: React.FC<{ onCreateHabit: () => void }> = ({ onCreateHabit }) => {
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">GS</span>
               </div>
-              {(!isMobile || isOpen) && <h1 className="text-xl font-bold">GlowStreak</h1>}
+              {(!isMobile || isOpen) && <h1 className="text-xl font-bold hidden md:block">GlowStreak</h1>}
             </div>
           </div>
 
@@ -88,7 +88,7 @@ const Navbar: React.FC<{ onCreateHabit: () => void }> = ({ onCreateHabit }) => {
               className="w-full gap-1 md:gap-2 bg-primary hover:bg-primary/90 px-2 md:px-4"
             >
               <Plus className="h-5 w-5" />
-              {(!isMobile || isOpen) && "New Habit"}
+              {(!isMobile || isOpen) && <span className="hidden md:inline">New Habit</span>}
             </Button>
             
             <Button
@@ -100,7 +100,7 @@ const Navbar: React.FC<{ onCreateHabit: () => void }> = ({ onCreateHabit }) => {
               className="w-full gap-1 md:gap-2 px-2 md:px-4"
             >
               <Plus className="h-5 w-5" />
-              {(!isMobile || isOpen) && "One-time Task"}
+              {(!isMobile || isOpen) && <span className="hidden md:inline">One-time Task</span>}
             </Button>
           </div>
 
@@ -150,7 +150,7 @@ const Navbar: React.FC<{ onCreateHabit: () => void }> = ({ onCreateHabit }) => {
               <AvatarFallback>US</AvatarFallback>
             </Avatar>
             {(!isMobile || isOpen) && (
-              <div className="text-sm">
+              <div className="text-sm hidden md:block">
                 <div className="font-medium">User</div>
                 <div className="text-muted-foreground text-xs">user@example.com</div>
               </div>
