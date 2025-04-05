@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,10 +15,10 @@ import HabitForm from "./components/HabitForm";
 
 const queryClient = new QueryClient();
 
-const App = () => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isOneTime, setIsOneTime] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+const App: React.FC = () => {
+  const [isFormOpen, setIsFormOpen] = React.useState(false);
+  const [isOneTime, setIsOneTime] = React.useState(false);
+  const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
 
   const handleCreateHabit = (oneTime: boolean = false) => {
     setIsOneTime(oneTime);
