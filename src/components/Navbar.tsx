@@ -34,7 +34,11 @@ const NavItem: React.FC<NavItemProps> = ({ icon: Icon, label, to, active, compac
   );
 };
 
-const Navbar: React.FC<{ onCreateHabit: () => void }> = ({ onCreateHabit }) => {
+interface NavbarProps {
+  onCreateHabit: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ onCreateHabit }) => {
   const location = useLocation();
   const currentPath = location.pathname;
   const isMobile = useIsMobile();

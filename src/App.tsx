@@ -51,6 +51,10 @@ const AppContent: React.FC = () => {
     setSelectedDate(date);
   };
 
+  const openHabitForm = () => {
+    setIsFormOpen(true);
+  };
+
   // If not authenticated, don't render the Navbar or HabitForm
   if (!isAuthenticated) {
     return (
@@ -63,7 +67,7 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <Navbar />
+      <Navbar onCreateHabit={openHabitForm} />
       <main className="flex-1 overflow-y-auto pb-16 pt-2">
         <Routes>
           <Route path="/" element={
