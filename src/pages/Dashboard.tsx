@@ -24,6 +24,31 @@ interface DashboardProps {
   onCreateOneTime?: () => void;
 }
 
+interface Habit {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  streak: number;
+  priority: 'low' | 'medium' | 'high';
+  isCompleted: boolean;
+  isOneTime: false;
+  completionDates: Date[];
+}
+
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  priority: 'low' | 'medium' | 'high';
+  isCompleted: boolean;
+  isOneTime: true;
+  dueDate: Date;
+}
+
+type DisplayItem = Habit | Task;
+
 const mockHabits = [
   {
     id: '1',
@@ -140,8 +165,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   onDateSelect, 
   onCreateOneTime 
 }) => {
-  const [habits, setHabits] = useState(mockHabits);
-  const [tasks, setTasks] = useState(mockTasks);
+  const [habits, setHabits] = useState<Habit[]>(mockHabits);
+  const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isOneTimeTask, setIsOneTimeTask] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
@@ -150,8 +175,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isMobile = useIsMobile();
 
   const [selectedDate, setSelectedDate] = useState<Date>(propSelectedDate || new Date());
-  const [filteredHabits, setFilteredHabits] = useState(habits);
-  const [filteredTasks, setFilteredTasks] = useState(tasks);
+  const [filteredHabits, setFilteredHabits] = useState<Habit[]>(habits);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>(tasks);
 
   useEffect(() => {
     const events: CalendarEvent[] = [];
@@ -389,7 +414,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 title={item.title}
                 description={item.description}
                 category={item.category}
-                streak={item.isOneTime ? 0 : (item.streak || 0)}
+                streak={item.isOneTime ? 0 : (item as Habit).streak}
                 priority={item.priority}
                 isCompleted={item.isCompleted}
                 isOneTime={item.isOneTime}
