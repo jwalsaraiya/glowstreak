@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
@@ -25,7 +24,6 @@ interface DashboardProps {
   onCreateOneTime?: () => void;
 }
 
-// Mock data with completion history
 const mockHabits = [
   {
     id: '1',
@@ -85,7 +83,6 @@ const mockHabits = [
   },
 ];
 
-// One-time tasks
 const mockTasks = [
   {
     id: 't1',
@@ -156,13 +153,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [filteredHabits, setFilteredHabits] = useState(habits);
   const [filteredTasks, setFilteredTasks] = useState(tasks);
 
-  // Generate calendar events
   useEffect(() => {
     const events: CalendarEvent[] = [];
     
-    // Add habits to calendar
     habits.forEach(habit => {
-      // Add current date entry
       events.push({
         id: habit.id,
         date: new Date(),
@@ -171,7 +165,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         isCompleted: habit.isCompleted
       });
       
-      // Add completion history
       habit.completionDates?.forEach((date, index) => {
         events.push({
           id: `${habit.id}-${index}`,
@@ -183,7 +176,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       });
     });
     
-    // Add one-time tasks to calendar
     tasks.forEach(task => {
       events.push({
         id: task.id,
@@ -197,9 +189,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     setCalendarEvents(events);
   }, [habits, tasks]);
 
-  // Filter habits and tasks by selected date
   useEffect(() => {
-    // Filter habits based on selected date
     const dateString = selectedDate.toDateString();
     
     const filteredHabits = habits.map(habit => {
@@ -213,7 +203,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       };
     });
     
-    // Filter tasks based on selected date
     const filteredTasks = tasks.filter(task => 
       task.dueDate.toDateString() === dateString
     );
@@ -265,12 +254,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         let completionDates = [...(habit.completionDates || [])];
         
         if (isCompleted) {
-          // Add today to completion dates if not already there
           if (!completionDates.some(date => date.toDateString() === today.toDateString())) {
             completionDates.push(today);
           }
         } else {
-          // Remove today from completion dates
           completionDates = completionDates.filter(
             date => date.toDateString() !== today.toDateString()
           );
@@ -328,7 +315,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleCalendarEventClick = (eventId: string) => {
-    // Find the habit or task by id
     const habit = habits.find(h => h.id === eventId);
     const task = tasks.find(t => t.id === eventId);
     
@@ -339,18 +325,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  // Get all items to display (habits and tasks)
   const getDisplayItems = () => {
     const isToday = selectedDate.toDateString() === new Date().toDateString();
     
-    // If viewing today, show both habits and relevant tasks
     if (isToday) {
       return [...filteredHabits, ...tasks.filter(task => 
         task.dueDate.toDateString() === selectedDate.toDateString()
       )];
     }
     
-    // If viewing past/future dates, show tasks due that day and habits with completion status
     return [
       ...filteredHabits,
       ...tasks.filter(task => task.dueDate.toDateString() === selectedDate.toDateString())
@@ -406,7 +389,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 title={item.title}
                 description={item.description}
                 category={item.category}
-                streak={item.streak || 0}
+                streak={item.isOneTime ? 0 : (item.streak || 0)}
                 priority={item.priority}
                 isCompleted={item.isCompleted}
                 isOneTime={item.isOneTime}

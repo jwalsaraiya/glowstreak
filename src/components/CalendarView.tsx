@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { format, addDays, subDays, isSameDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface CalendarEvent {
   date: Date;
