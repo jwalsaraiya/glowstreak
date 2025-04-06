@@ -55,12 +55,12 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
   };
 
   const sidebarClasses = cn(
-    "h-screen border-r flex flex-col justify-between p-2 md:p-4 transition-all duration-300 bg-background z-50",
+    "h-screen border-r flex flex-col justify-between p-2 md:p-4 transition-all duration-300",
     isMobile ? (
       isOpen 
-        ? "fixed inset-y-0 left-0 right-0 max-w-[280px] ml-auto w-full shadow-lg transform translate-x-0" 
-        : "fixed inset-y-0 left-0 right-0 max-w-[280px] ml-auto w-full shadow-lg transform translate-x-full"
-    ) : "w-16 md:w-64 relative"
+        ? "fixed inset-y-0 left-0 right-0 max-w-[280px] ml-auto w-full z-50 bg-background shadow-lg transform translate-x-0" 
+        : "fixed inset-y-0 left-0 right-0 max-w-[280px] ml-auto w-full z-50 bg-background shadow-lg transform translate-x-full"
+    ) : "w-16 md:w-64 relative ml-auto"
   );
 
   return (
@@ -69,7 +69,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
         <Button 
           variant="ghost" 
           size="icon" 
-          className="fixed top-4 right-4 z-40 md:hidden bg-background/80 backdrop-blur-sm border shadow-sm"
+          className="fixed top-4 right-4 z-40 md:hidden bg-background/80 backdrop-blur-sm border"
           onClick={toggleMenu}
         >
           {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -77,7 +77,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
       )}
       
       <div className={sidebarClasses}>
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center mb-6 justify-center md:justify-start">
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
@@ -87,13 +87,13 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
             </div>
           </div>
 
-          <div className="flex flex-col space-y-3">
+          <div className="flex flex-col space-y-2">
             <Button
               onClick={() => {
                 onCreateHabit();
                 closeMenu();
               }}
-              className="w-full gap-1 md:gap-2 bg-primary/20 hover:bg-primary/30 text-primary-foreground px-2 md:px-4"
+              className="w-full gap-1 md:gap-2 bg-primary hover:bg-primary/90 px-2 md:px-4"
             >
               <Plus className="h-5 w-5" />
               {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>New Habit</span>}
@@ -104,7 +104,8 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
                 onCreateOneTime();
                 closeMenu();
               }}
-              className="w-full gap-1 md:gap-2 px-2 md:px-4 bg-yellow-100 hover:bg-yellow-200 text-yellow-900"
+              variant="outline"
+              className="w-full gap-1 md:gap-2 px-2 md:px-4"
             >
               <Plus className="h-5 w-5" />
               {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>New Task</span>}
@@ -115,14 +116,15 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
                 onCreateEvent();
                 closeMenu();
               }}
-              className="w-full gap-1 md:gap-2 px-2 md:px-4 bg-blue-100 hover:bg-blue-200 text-blue-900"
+              variant="secondary"
+              className="w-full gap-1 md:gap-2 px-2 md:px-4"
             >
               <Calendar className="h-5 w-5" />
               {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>New Event</span>}
             </Button>
           </div>
 
-          <div className="space-y-3 mt-6">
+          <div className="space-y-1 mt-6">
             <NavItem
               icon={Home}
               label="Dashboard"
@@ -151,7 +153,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-3">
+          <div className="space-y-1">
             <NavItem
               icon={Settings}
               label="Settings"

@@ -26,7 +26,6 @@ interface CalendarEvent {
   type: 'habit' | 'event' | 'task';
   title: string;
   id: string;
-  priority?: 'low' | 'medium' | 'high';
   isCompleted?: boolean;
   startDate?: Date; // Used for recurrence and filtering
 }
@@ -152,17 +151,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   const weeks = organizeDaysIntoWeeks();
   const daysOfWeek = getDaysOfWeek();
 
-  // Get event background color based on type and priority
-  const getEventBgColor = (event: CalendarEvent) => {
-    if (event.type === 'task') {
-      return event.priority === 'high' ? 'bg-destructive text-white' : 'bg-yellow-200';
-    } 
-    if (event.type === 'event') {
-      return event.priority === 'high' ? 'bg-blue-500 text-white' : 'bg-blue-200';
-    }
-    return 'bg-primary/20';
-  };
-
   return (
     <Card className="h-full border shadow-none">
       <CardHeader className="pb-2">
@@ -223,11 +211,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                   const dateEvents = getEventsForDate(date);
                   const isCurrentDay = isSameDay(date, new Date());
                   const isSelected = isSameDay(date, selectedDate);
+                  const isInFuture = isBefore(new Date(), date);
 
                   return (
                     <div 
                       key={`day-${weekIdx}-${dayIdx}`}
-                      className="flex flex-col min-h-[80px]"
+                      className="flex flex-col"
                       onClick={() => handleDateSelect(date)}
                     >
                       <div className={cn(
@@ -237,16 +226,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                       )}>
                         {date.getDate()}
                       </div>
-                      <div className="flex flex-col gap-1 max-h-[60px] overflow-y-auto">
+                      <div className="flex flex-col gap-1 max-h-[80px] overflow-y-auto">
                         {dateEvents.map((event, idx) => (
                           <Badge 
                             key={idx}
-                            variant="outline"
+                            variant={event.type === 'event' ? 'secondary' : 'outline'}
                             className={cn(
-                              "truncate text-xs md:text-sm py-1 px-2 my-0.5 cursor-pointer",
-                              getEventBgColor(event),
+                              "truncate text-xs py-0.5 cursor-pointer",
                               event.isCompleted ? "opacity-70 line-through" : "",
-                              isEventLocked(event) ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
+                              isEventLocked(event) ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90"
                             )}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -281,7 +269,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                       event.type === 'event' ? "bg-secondary border-l-2 border-blue-400" : 
                       event.type === 'task' ? "bg-yellow-100 border-l-2 border-yellow-400" : 
                       "bg-primary/10 border-l-2 border-primary",
-                      event.priority === 'high' ? "border-l-4 font-medium" : "",
                       event.isCompleted ? 'line-through opacity-70' : '',
                       isEventLocked(event) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                     )}
