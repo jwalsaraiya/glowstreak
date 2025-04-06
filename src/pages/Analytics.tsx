@@ -4,14 +4,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScrollContainer } from 'recharts';
 import { 
   CheckCheck, Clock, Flame, TrendingUp, 
-  ArrowRight, ArrowUp, Zap, PieChart, Calendar
+  ArrowRight, ArrowUp, Zap, PieChart, Calendar,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/use-auth';
-import { format, subDays, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, differenceInDays, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { 
+  format, 
+  subDays, 
+  isSameDay, 
+  startOfMonth, 
+  endOfMonth, 
+  startOfWeek, 
+  endOfWeek, 
+  eachDayOfInterval, 
+  differenceInDays, 
+  startOfYear, 
+  endOfYear, 
+  isWithinInterval,
+  addYears,
+  subYears,
+  getYear
+} from 'date-fns';
 
 const AnalyticsPage: React.FC = () => {
   const { user } = useAuth();
@@ -21,11 +39,15 @@ const AnalyticsPage: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [habitStats, setHabitStats] = useState<any[]>([]);
+  const [settings, setSettings] = useState<{firstDayOfWeek: "sunday" | "monday"}>({ firstDayOfWeek: "sunday" });
+  const [selectedYear, setSelectedYear] = useState<number>(getYear(new Date()));
 
   // Fetch user's habits, events, and tasks data
   useEffect(() => {
     if (user) {
       const userData = localStorage.getItem(`userData_${user.id}`);
+      const userSettings = localStorage.getItem(`settings_${user.id}`);
+      
       if (userData) {
         const parsedData = JSON.parse(userData);
         const habitsData = parsedData.habits || [];
@@ -38,6 +60,13 @@ const AnalyticsPage: React.FC = () => {
           setSelectedHabit(habitsData[0].id);
         }
       }
+      
+      if (userSettings) {
+        const parsedSettings = JSON.parse(userSettings);
+        setSettings({
+          firstDayOfWeek: parsedSettings.firstDayOfWeek || "sunday"
+        });
+      }
     }
   }, [user, selectedHabit]);
 
@@ -46,6 +75,7 @@ const AnalyticsPage: React.FC = () => {
     if (!habits.length) return;
 
     const today = new Date();
+    const weekStartsOn = settings.firstDayOfWeek === "monday" ? 1 : 0;
     const statsArray = habits.map(habit => {
       const completionDates = habit.completionDates || [];
       const startDate = habit.startDate ? new Date(habit.startDate) : today;
@@ -57,6 +87,10 @@ const AnalyticsPage: React.FC = () => {
         const dateObj = new Date(dateStr);
         successDays.add(format(dateObj, 'yyyy-MM-dd'));
       });
+      
+      // Count the number of success and fail days
+      const successCount = successDays.size;
+      const failCount = daysToConsider - successCount;
       
       // Calculate current streak
       let currentStreak = 0;
@@ -76,7 +110,7 @@ const AnalyticsPage: React.FC = () => {
       
       // Calculate completions for different time periods
       const thisWeek = eachDayOfInterval({
-        start: startOfWeek(today),
+        start: startOfWeek(today, { weekStartsOn }),
         end: today
       });
       
@@ -102,47 +136,52 @@ const AnalyticsPage: React.FC = () => {
         successDays.has(format(day, 'yyyy-MM-dd'))
       ).length;
       
-      // Calculate fail days (days since start that weren't completed)
-      const failDays = daysToConsider - successDays.size;
-      
-      // Calculate success to fail ratio
-      const successToFailRatio = failDays > 0 
-        ? (successDays.size / failDays).toFixed(2)
-        : successDays.size > 0 ? "∞" : "0";
-      
       // Calculate completion rate
-      const completionRate = Math.round((successDays.size / daysToConsider) * 100);
+      const completionRate = Math.round((successCount / daysToConsider) * 100);
       
-      // Generate weekly trend data
+      // Generate weekly trend data for all weeks in the selected year
       const weeklyTrendData = [];
-      for (let i = 6; i >= 0; i--) {
-        const weekStart = subDays(today, i * 7 + 6);
-        const weekEnd = subDays(today, i * 7);
-        const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+      const yearStart = new Date(selectedYear, 0, 1);
+      const yearEnd = new Date(selectedYear, 11, 31);
+      
+      let currentWeekStart = startOfWeek(new Date(selectedYear, 0, 1), { weekStartsOn });
+      while (currentWeekStart <= endOfYear(new Date(selectedYear, 0, 1))) {
+        const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn });
+        const weekDays = eachDayOfInterval({ 
+          start: currentWeekStart, 
+          end: weekEnd 
+        });
+        
+        const weekInYear = Math.ceil((differenceInDays(currentWeekStart, new Date(selectedYear, 0, 1)) + 1) / 7);
         
         const completedDays = weekDays.filter(day => 
           successDays.has(format(day, 'yyyy-MM-dd'))
         ).length;
         
-        const weekCompletionRate = Math.round((completedDays / weekDays.length) * 100);
+        const weekCompletionRate = weekDays.length > 0 ? Math.round((completedDays / weekDays.length) * 100) : 0;
         
         weeklyTrendData.push({
-          name: `W${i+1}`,
+          name: `W${weekInYear}`,
           value: weekCompletionRate,
-          tooltip: `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`
+          tooltip: `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`
         });
+        
+        // Move to next week
+        currentWeekStart = new Date(currentWeekStart);
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
       }
       
-      // Generate monthly trend data
+      // Generate monthly trend data for all months in the selected year
       const monthlyTrendData = [];
-      for (let i = 5; i >= 0; i--) {
-        const monthDate = new Date(today);
-        monthDate.setMonth(today.getMonth() - i);
+      for (let i = 0; i < 12; i++) {
+        const monthDate = new Date(selectedYear, i, 1);
         const monthStart = startOfMonth(monthDate);
         const monthEnd = endOfMonth(monthDate);
         
-        // Only count days up to today for the current month
-        const effectiveEndDate = i === 0 ? today : monthEnd;
+        // If this month is current or future month in current year, adjust end date
+        const effectiveEndDate = selectedYear === today.getFullYear() && i >= today.getMonth() 
+          ? (i === today.getMonth() ? today : monthStart) // If future month, just count the 1st day (will be 0%)
+          : monthEnd;
         
         const monthDays = eachDayOfInterval({ 
           start: monthStart, 
@@ -153,11 +192,13 @@ const AnalyticsPage: React.FC = () => {
           successDays.has(format(day, 'yyyy-MM-dd'))
         ).length;
         
-        const monthCompletionRate = Math.round((completedDays / monthDays.length) * 100);
+        const monthCompletionRate = monthDays.length > 0 ? Math.round((completedDays / monthDays.length) * 100) : 0;
         
         monthlyTrendData.push({
           name: format(monthDate, 'MMM'),
-          value: monthCompletionRate
+          value: monthCompletionRate,
+          totalDays: monthDays.length,
+          completedDays: completedDays
         });
       }
       
@@ -197,7 +238,8 @@ const AnalyticsPage: React.FC = () => {
         currentStreak,
         longestStreak,
         completionRate,
-        successToFailRatio,
+        successCount,
+        failCount,
         weeklyCompletions,
         monthlyCompletions,
         yearlyCompletions,
@@ -207,7 +249,7 @@ const AnalyticsPage: React.FC = () => {
     });
     
     setHabitStats(statsArray);
-  }, [habits]);
+  }, [habits, selectedYear, settings.firstDayOfWeek]);
 
   // Get the currently selected habit stats
   const getSelectedHabitStats = () => {
@@ -216,6 +258,14 @@ const AnalyticsPage: React.FC = () => {
   };
 
   const selectedStats = getSelectedHabitStats();
+
+  const changeYear = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      setSelectedYear(prevYear => prevYear - 1);
+    } else {
+      setSelectedYear(prevYear => prevYear + 1);
+    }
+  };
 
   if (!habits.length) {
     return (
@@ -315,19 +365,27 @@ const AnalyticsPage: React.FC = () => {
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-semibold flex items-center">
                   <PieChart className="mr-2 h-5 w-5" />
-                  Success to Fail Ratio
+                  Success vs Fail Count
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold mb-2">{selectedStats.successToFailRatio}</div>
-                <p className="text-sm text-muted-foreground mb-4">Success vs Failure Rate</p>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex justify-between mb-2">
+                  <div>
+                    <div className="text-4xl font-bold text-green-500">{selectedStats.successCount}</div>
+                    <p className="text-sm text-muted-foreground">Success</p>
+                  </div>
+                  <div>
+                    <div className="text-4xl font-bold text-red-500">{selectedStats.failCount}</div>
+                    <p className="text-sm text-muted-foreground">Fail</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mb-2 mt-4">
                   <Badge className="bg-green-500">Success</Badge>
                   <span className="text-sm">vs</span>
                   <Badge variant="outline" className="text-red-500">Fail</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {parseFloat(selectedStats.successToFailRatio) >= 1 ? 
+                  {selectedStats.successCount > selectedStats.failCount ? 
                     "You're succeeding more than failing!" : 
                     "Try to increase your success rate!"}
                 </p>
@@ -391,46 +449,80 @@ const AnalyticsPage: React.FC = () => {
           <div className="grid grid-cols-1 gap-6 mb-8">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-4">
                   <CardTitle className="text-xl font-semibold flex items-center">
                     <TrendingUp className="mr-2 h-5 w-5" />
                     Completion Trend
                   </CardTitle>
-                  <Select 
-                    value={range} 
-                    onValueChange={(value: 'daily' | 'weekly' | 'monthly') => setRange(value)}
-                  >
-                    <SelectTrigger className="w-32 h-8">
-                      <SelectValue placeholder="Select range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => changeYear('prev')}
+                        className="h-8 w-8"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="mx-2 text-sm font-medium">{selectedYear}</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => changeYear('next')}
+                        className="h-8 w-8"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Select 
+                      value={range} 
+                      onValueChange={(value: 'daily' | 'weekly' | 'monthly') => setRange(value)}
+                    >
+                      <SelectTrigger className="w-32 h-8">
+                        <SelectValue placeholder="Select range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" />
-                      <YAxis unit="%" domain={[0, 100]} />
-                      <Tooltip
-                        formatter={(value) => [`${value}%`, 'Completion Rate']}
-                        contentStyle={{ borderRadius: '0.5rem' }}
-                      />
-                      <Bar
-                        dataKey="value"
-                        fill="hsl(var(--primary))"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="h-80 overflow-x-auto relative">
+                  <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+                  <div className="absolute inset-y-0 right-0 w-4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+                  
+                  <div className={`${range === 'weekly' ? 'min-w-[1200px]' : 'min-w-[700px]'} h-full`}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        barSize={range === 'weekly' ? 15 : 30}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" />
+                        <YAxis unit="%" domain={[0, 100]} />
+                        <Tooltip
+                          formatter={(value) => [`${value}%`, 'Completion Rate']}
+                          contentStyle={{ borderRadius: '0.5rem' }}
+                          labelFormatter={(label) => {
+                            const item = (range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData)
+                              .find((item: any) => item.name === label);
+                            return range === 'weekly' 
+                              ? item?.tooltip || label 
+                              : `${label}: ${item?.completedDays || 0}/${item?.totalDays || 0} days`;
+                          }}
+                        />
+                        <Bar
+                          dataKey="value"
+                          fill="hsl(var(--primary))"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </CardContent>
             </Card>

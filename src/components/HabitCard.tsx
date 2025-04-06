@@ -1,128 +1,127 @@
 
 import React from 'react';
+import { X, CheckCircle2, Circle, Flame, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CheckCircle, Clock, Trash2, Lock } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface HabitCardProps {
   title: string;
   description?: string;
-  category: string;
-  streak: number;
-  priority: 'low' | 'medium' | 'high';
-  isCompleted?: boolean;
+  category?: string;
+  streak?: number;
+  priority?: 'low' | 'medium' | 'high';
+  isCompleted: boolean;
   isOneTime?: boolean;
-  className?: string;
-  onClick?: () => void;
-  onDelete?: () => void;
   disabled?: boolean;
+  onClick: () => void;
+  onDelete: () => void;
 }
-
-const priorityClasses = {
-  low: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  medium: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
-  high: 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300',
-};
 
 const HabitCard: React.FC<HabitCardProps> = ({
   title,
   description,
   category,
-  streak,
-  priority,
-  isCompleted = false,
+  streak = 0,
+  priority = 'medium',
+  isCompleted,
   isOneTime = false,
-  className,
-  onClick,
-  onDelete,
   disabled = false,
+  onClick,
+  onDelete
 }) => {
-  const hasLongStreak = streak >= 5 && !isOneTime;
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onDelete) onDelete();
+  const getPriorityColor = () => {
+    switch (priority) {
+      case 'high':
+        return 'border-l-4 border-destructive';
+      case 'medium':
+        return 'border-l-4 border-yellow-400';
+      case 'low':
+        return 'border-l-4 border-green-400';
+      default:
+        return 'border-l-4 border-yellow-400';
+    }
   };
 
-  const handleClick = () => {
-    if (disabled) return;
-    if (onClick) onClick();
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete();
   };
 
   return (
-    <Card
+    <div
       className={cn(
-        "relative h-full transition-all duration-300 border-2",
-        isCompleted ? "opacity-75 bg-secondary/50" : "bg-card",
-        hasLongStreak && !isCompleted ? "streak-card" : "",
-        disabled ? "cursor-not-allowed opacity-70" : "hover:cursor-pointer hover:-translate-y-1",
-        className
+        'bg-card relative rounded-lg p-4 shadow-sm transition-all hover:shadow-md',
+        isCompleted ? 'opacity-70' : 'opacity-100',
+        getPriorityColor()
       )}
-      onClick={handleClick}
+      onClick={disabled ? undefined : onClick}
     >
-      {hasLongStreak && !isCompleted && <div className="streak-glow"></div>}
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex flex-col space-y-1 pr-10">
-            <h3 className={cn("font-medium text-lg truncate max-w-full", isCompleted && "line-through opacity-70")}>
-              {title}
-            </h3>
-            {description && (
-              <p className="text-sm text-muted-foreground line-clamp-2 break-words">
-                {description}
-              </p>
-            )}
-          </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-1 right-1 h-6 w-6 rounded-full hover:bg-destructive/10"
+        onClick={handleDelete}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+
+      <div className="flex items-start gap-2 mb-2 mt-2">
+        <div 
+          className={cn(
+            "mt-0.5 flex-shrink-0",
+            disabled ? "opacity-50" : "cursor-pointer"
+          )}
+          onClick={disabled ? undefined : onClick}
+        >
           {isCompleted ? (
-            <CheckCircle className="h-6 w-6 text-primary shrink-0" />
-          ) : disabled ? (
-            <Lock className="h-6 w-6 text-muted-foreground shrink-0" />
+            <CheckCircle2 className="h-5 w-5 text-primary" />
           ) : (
-            <div className="flex items-center shrink-0">
-              <Clock className="h-5 w-5 text-muted-foreground mr-1" />
-              <span className="text-sm text-muted-foreground whitespace-nowrap">Today</span>
-            </div>
+            <Circle className="h-5 w-5 text-muted-foreground" />
           )}
         </div>
-        
-        <div className="flex flex-wrap justify-between items-center mt-4 gap-2">
-          <Badge className="rounded-full text-xs">{category}</Badge>
-          <div className="flex flex-wrap gap-2 justify-end">
-            <Badge variant="outline" className={cn("rounded-full text-xs", priorityClasses[priority])}>
-              {priority}
-            </Badge>
-            {streak > 0 && !isOneTime && (
-              <Badge 
-                className={cn(
-                  "rounded-full font-semibold",
-                  hasLongStreak ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
-                )}
-              >
-                {streak} day{streak !== 1 ? 's' : ''}
-              </Badge>
-            )}
-            {isOneTime && (
-              <Badge variant="outline" className="rounded-full text-xs">
-                One-time
-              </Badge>
-            )}
-          </div>
+        <div className="flex-1 pr-6">
+          <h3 className={cn(
+            "font-medium leading-tight",
+            isCompleted && "line-through"
+          )}>
+            {title}
+          </h3>
+          {description && (
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              {description}
+            </p>
+          )}
         </div>
-      </CardContent>
-      
-      {onDelete && (
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive z-10" 
-          onClick={handleDeleteClick}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      )}
-    </Card>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mt-3">
+        {category && (
+          <Badge variant="outline" className="text-xs">
+            {category}
+          </Badge>
+        )}
+        
+        {isOneTime ? (
+          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            One time
+          </Badge>
+        ) : (
+          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+            <Flame className="h-3 w-3" />
+            Streak: {streak}
+          </Badge>
+        )}
+        
+        {disabled && (
+          <Badge variant="outline" className="text-xs flex items-center gap-1 ml-auto">
+            <Clock className="h-3 w-3" />
+            Future
+          </Badge>
+        )}
+      </div>
+    </div>
   );
 };
 

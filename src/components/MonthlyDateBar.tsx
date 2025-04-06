@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   format, 
@@ -20,6 +21,7 @@ interface CalendarEvent {
   title: string;
   date: Date | string;
   type: 'habit' | 'event' | 'task';
+  priority?: string;
   isCompleted?: boolean;
 }
 
@@ -113,11 +115,11 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
     return weeks;
   };
 
-  // Get events for a specific day
-  const getEventsForDay = (day: Date) => {
+  // Get high priority events for a specific day
+  const getHighPriorityEventsForDay = (day: Date) => {
     return events.filter(event => {
       const eventDate = new Date(event.date);
-      return isSameDay(eventDate, day);
+      return isSameDay(eventDate, day) && event.priority === 'high';
     });
   };
 
@@ -167,14 +169,14 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
               const isCurrentDay = isToday(day);
               const isSelected = isSameDay(day, selectedDate);
               const isInFuture = isBefore(new Date(), day);
-              const dayEvents = getEventsForDay(day);
+              const highPriorityEvents = getHighPriorityEventsForDay(day);
               
               return (
                 <div 
                   key={`day-${weekIdx}-${dayIdx}`}
                   onClick={() => onDateSelect(day)}
                   className={cn(
-                    "flex flex-col items-center p-1 rounded-md cursor-pointer transition-colors",
+                    "flex flex-col items-center p-1 rounded-md cursor-pointer transition-colors min-h-[80px]",
                     isSelected ? "bg-primary text-primary-foreground" : 
                     isCurrentDay ? "bg-muted" : "hover:bg-accent/50"
                   )}
@@ -186,25 +188,28 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
                     {day.getDate()}
                   </span>
                   
-                  {/* Show event indicators */}
-                  {dayEvents.length > 0 && (
-                    <div className="flex flex-wrap justify-center mt-1 gap-1">
-                      {dayEvents.length <= 3 ? (
-                        dayEvents.map((event, idx) => (
-                          <Badge 
-                            key={idx}
-                            variant="outline"
-                            className={cn(
-                              "w-2 h-2 p-0 rounded-full",
-                              event.type === 'habit' ? "bg-primary" : 
-                              event.type === 'event' ? "bg-blue-400" : 
-                              "bg-yellow-400"
-                            )}
-                          />
-                        ))
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          {dayEvents.length} items
+                  {/* Show high priority events */}
+                  {highPriorityEvents.length > 0 && (
+                    <div className="flex flex-col w-full mt-1 gap-1 text-left">
+                      {highPriorityEvents.slice(0, 2).map((event, idx) => (
+                        <div 
+                          key={idx}
+                          className={cn(
+                            "text-[8px] truncate px-1 rounded",
+                            isSelected ? "text-primary-foreground/90" : "text-foreground",
+                            event.type === 'habit' ? "bg-primary/10 border-l border-primary" : 
+                            event.type === 'event' ? "bg-blue-400/10 border-l border-blue-400" : 
+                            "bg-yellow-400/10 border-l border-yellow-400",
+                            event.isCompleted && "line-through opacity-70"
+                          )}
+                          title={event.title}
+                        >
+                          {event.title}
+                        </div>
+                      ))}
+                      {highPriorityEvents.length > 2 && (
+                        <span className="text-[8px] text-muted-foreground text-center">
+                          +{highPriorityEvents.length - 2} more
                         </span>
                       )}
                     </div>
