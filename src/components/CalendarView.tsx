@@ -14,7 +14,10 @@ import {
   subMonths,
   startOfWeek,
   endOfWeek,
-  isBefore
+  isBefore,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -24,7 +27,7 @@ interface CalendarEvent {
   title: string;
   id: string;
   isCompleted?: boolean;
-  startDate?: Date; // Added for recurrence checks
+  startDate?: Date; // Used for recurrence and filtering
 }
 
 interface CalendarViewProps {
@@ -63,13 +66,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     if (onEventClick) onEventClick(eventId);
   };
 
-  // Navigate through weeks
-  const changeWeek = (direction: 'prev' | 'next') => {
-    setViewDate(prevDate => 
-      direction === 'prev' ? subDays(prevDate, 7) : addDays(prevDate, 7)
-    );
-  };
-
   // Navigate through months
   const changeMonth = (direction: 'prev' | 'next') => {
     setViewDate(prevDate => 
@@ -77,18 +73,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     );
   };
 
-  // Calculate week days based on the first day of week setting
-  const getWeekDays = () => {
-    const weekStart = startOfWeek(viewDate, { weekStartsOn });
-    const weekEnd = endOfWeek(viewDate, { weekStartsOn });
-    
-    const days = [];
-    let day = weekStart;
-    
-    while (day <= weekEnd) {
-      days.push(new Date(day));
-      day = addDays(day, 1);
-    }
+  // Get days of week header based on first day setting
+  const getDaysOfWeek = () => {
+    const days = firstDayOfWeek === "monday" 
+      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     
     return days;
   };
@@ -124,12 +113,43 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     return isBefore(today, eventDate);
   };
 
-  // Get week header
-  const weekDayLabels = firstDayOfWeek === "monday" 
-    ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // Organize days into weeks for grid display
+  const organizeDaysIntoWeeks = () => {
+    const monthStart = startOfMonth(viewDate);
+    const monthEnd = endOfMonth(viewDate);
+    const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    
+    const firstDay = monthStart.getDay();
+    const adjustedFirstDay = (firstDay - (weekStartsOn === 1 ? 1 : 0) + 7) % 7;
+    
+    const daysWithEmptySpaces = [];
+    
+    // Add empty spaces for days before the 1st of the month
+    for (let i = 0; i < adjustedFirstDay; i++) {
+      daysWithEmptySpaces.push(null);
+    }
+    
+    // Add all days of the month
+    monthDays.forEach(day => {
+      daysWithEmptySpaces.push(day);
+    });
+    
+    // Make sure we have complete weeks (rows of 7)
+    while (daysWithEmptySpaces.length % 7 !== 0) {
+      daysWithEmptySpaces.push(null);
+    }
+    
+    // Split into weeks
+    const weeks = [];
+    for (let i = 0; i < daysWithEmptySpaces.length; i += 7) {
+      weeks.push(daysWithEmptySpaces.slice(i, i + 7));
+    }
+    
+    return weeks;
+  };
 
-  const weekDays = getWeekDays();
+  const weeks = organizeDaysIntoWeeks();
+  const daysOfWeek = getDaysOfWeek();
 
   return (
     <Card className="h-full border shadow-none">
@@ -155,12 +175,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       <CardContent className="p-0">
         <div className="mt-0">
           <div className="flex justify-between items-center px-4 pt-2">
-            <Button variant="ghost" size="icon" onClick={() => changeWeek('prev')}>
+            <Button variant="ghost" size="icon" onClick={() => changeMonth('prev')}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center">
               <h3 className="text-sm font-medium">
-                {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
+                {format(viewDate, 'MMMM yyyy')}
               </h3>
               <Button 
                 variant="ghost" 
@@ -171,58 +191,67 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                 Today
               </Button>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => changeWeek('next')}>
+            <Button variant="ghost" size="icon" onClick={() => changeMonth('next')}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
           <div className="p-4 grid grid-cols-7 gap-1 text-center text-xs sm:text-sm font-medium">
-            {weekDayLabels.map(day => (
+            {daysOfWeek.map(day => (
               <div key={day} className="font-medium">{day}</div>
             ))}
           </div>
           <div className="px-4 pb-4 grid grid-cols-7 gap-1 text-center">
-            {weekDays.map((date, i) => {
-              const dateEvents = getEventsForDate(date);
-              const isToday = isSameDay(date, today);
-              const isSelected = isSameDay(date, selectedDate);
+            {weeks.map((week, weekIdx) => (
+              <React.Fragment key={weekIdx}>
+                {week.map((date, dayIdx) => {
+                  if (!date) {
+                    return <div key={`empty-${weekIdx}-${dayIdx}`} className="p-2"></div>;
+                  }
 
-              return (
-                <div 
-                  key={i} 
-                  className="flex flex-col"
-                  onClick={() => handleDateSelect(date)}
-                >
-                  <div className={cn(
-                    "mb-1 h-8 w-8 rounded-full flex items-center justify-center mx-auto cursor-pointer transition-colors",
-                    isSelected ? 'bg-primary text-primary-foreground' : 
-                    isToday ? 'bg-muted text-foreground' : ''
-                  )}>
-                    {date.getDate()}
-                  </div>
-                  <div className="flex flex-col gap-1 max-h-[120px] overflow-y-auto">
-                    {dateEvents.map((event, idx) => (
-                      <Badge 
-                        key={idx}
-                        variant={event.type === 'event' ? 'secondary' : 'outline'}
-                        className={cn(
-                          "truncate text-xs py-0.5 cursor-pointer",
-                          event.isCompleted ? "opacity-70 line-through" : "",
-                          isEventLocked(event) ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90"
-                        )}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!isEventLocked(event)) {
-                            handleEventClick(event.id);
-                          }
-                        }}
-                      >
-                        {event.title}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                  const dateEvents = getEventsForDate(date);
+                  const isCurrentDay = isSameDay(date, new Date());
+                  const isSelected = isSameDay(date, selectedDate);
+                  const isInFuture = isBefore(new Date(), date);
+
+                  return (
+                    <div 
+                      key={`day-${weekIdx}-${dayIdx}`}
+                      className="flex flex-col"
+                      onClick={() => handleDateSelect(date)}
+                    >
+                      <div className={cn(
+                        "mb-1 h-7 w-7 rounded-full flex items-center justify-center mx-auto cursor-pointer transition-colors",
+                        isSelected ? 'bg-primary text-primary-foreground' : 
+                        isCurrentDay ? 'bg-muted text-foreground' : ''
+                      )}>
+                        {date.getDate()}
+                      </div>
+                      <div className="flex flex-col gap-1 max-h-[80px] overflow-y-auto">
+                        {dateEvents.map((event, idx) => (
+                          <Badge 
+                            key={idx}
+                            variant={event.type === 'event' ? 'secondary' : 'outline'}
+                            className={cn(
+                              "truncate text-xs py-0.5 cursor-pointer",
+                              event.isCompleted ? "opacity-70 line-through" : "",
+                              isEventLocked(event) ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isEventLocked(event)) {
+                                handleEventClick(event.id);
+                              }
+                            }}
+                          >
+                            {event.title}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            ))}
           </div>
 
           {/* Selected date events */}

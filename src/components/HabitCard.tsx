@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { CheckCircle, Clock, Trash2 } from 'lucide-react';
+import { CheckCircle, Clock, Trash2, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ interface HabitCardProps {
   className?: string;
   onClick?: () => void;
   onDelete?: () => void;
+  disabled?: boolean;
 }
 
 const priorityClasses = {
@@ -36,6 +37,7 @@ const HabitCard: React.FC<HabitCardProps> = ({
   className,
   onClick,
   onDelete,
+  disabled = false,
 }) => {
   const hasLongStreak = streak >= 5 && !isOneTime;
 
@@ -44,16 +46,21 @@ const HabitCard: React.FC<HabitCardProps> = ({
     if (onDelete) onDelete();
   };
 
+  const handleClick = () => {
+    if (disabled) return;
+    if (onClick) onClick();
+  };
+
   return (
     <Card
       className={cn(
         "relative h-full transition-all duration-300 border-2",
         isCompleted ? "opacity-75 bg-secondary/50" : "bg-card",
         hasLongStreak && !isCompleted ? "streak-card" : "",
-        "hover:cursor-pointer hover:-translate-y-1",
+        disabled ? "cursor-not-allowed opacity-70" : "hover:cursor-pointer hover:-translate-y-1",
         className
       )}
-      onClick={onClick}
+      onClick={handleClick}
     >
       {hasLongStreak && !isCompleted && <div className="streak-glow"></div>}
       <CardContent className="p-4">
@@ -70,6 +77,8 @@ const HabitCard: React.FC<HabitCardProps> = ({
           </div>
           {isCompleted ? (
             <CheckCircle className="h-6 w-6 text-primary shrink-0" />
+          ) : disabled ? (
+            <Lock className="h-6 w-6 text-muted-foreground shrink-0" />
           ) : (
             <div className="flex items-center shrink-0">
               <Clock className="h-5 w-5 text-muted-foreground mr-1" />
@@ -109,6 +118,7 @@ const HabitCard: React.FC<HabitCardProps> = ({
           size="icon" 
           className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive z-10" 
           onClick={handleDeleteClick}
+          disabled={disabled}
         >
           <Trash2 className="h-4 w-4" />
         </Button>

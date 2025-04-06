@@ -1,58 +1,109 @@
-
 import React, { useState, useEffect } from 'react';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { 
+  format, 
+  startOfMonth, 
+  endOfMonth, 
+  eachDayOfInterval, 
+  isSameDay, 
+  addMonths, 
+  subMonths,
+  isToday,
+  isBefore
+} from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface WeeklyDateBarProps {
+interface MonthlyDateBarProps {
   selectedDate: Date;
   onDateSelect: (date: Date) => void;
   firstDayOfWeek?: "sunday" | "monday";
 }
 
-const WeeklyDateBar: React.FC<WeeklyDateBarProps> = ({ 
+const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({ 
   selectedDate, 
   onDateSelect,
   firstDayOfWeek = "sunday"
 }) => {
   const weekStartsOn = firstDayOfWeek === "monday" ? 1 : 0;
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(selectedDate, { weekStartsOn }));
+  const [currentMonthDate, setCurrentMonthDate] = useState(startOfMonth(selectedDate));
   
   useEffect(() => {
-    // Update week if selected date changes to a different week
-    const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn });
-    if (!isSameDay(selectedWeekStart, currentWeekStart)) {
-      setCurrentWeekStart(selectedWeekStart);
+    // Update month if selected date changes to a different month
+    const selectedMonthStart = startOfMonth(selectedDate);
+    if (!isSameDay(selectedMonthStart, currentMonthDate)) {
+      setCurrentMonthDate(selectedMonthStart);
     }
-  }, [selectedDate, currentWeekStart, weekStartsOn]);
+  }, [selectedDate, currentMonthDate]);
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    const daysToAdd = direction === 'next' ? 7 : -7;
-    const newWeekStart = addDays(currentWeekStart, daysToAdd);
-    setCurrentWeekStart(newWeekStart);
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newMonthDate = direction === 'next' 
+      ? addMonths(currentMonthDate, 1) 
+      : subMonths(currentMonthDate, 1);
     
-    // Keep day of week when navigating
-    const dayOfWeek = (selectedDate.getDay() - weekStartsOn + 7) % 7;
-    const newDate = addDays(newWeekStart, dayOfWeek);
+    setCurrentMonthDate(newMonthDate);
+    
+    // When navigating months, keep the same day of month if possible
+    const newDate = new Date(selectedDate);
+    newDate.setFullYear(newMonthDate.getFullYear(), newMonthDate.getMonth(), selectedDate.getDate());
+    
+    // Handle cases where the day doesn't exist in the new month (e.g., Feb 30)
+    const lastDayOfNewMonth = endOfMonth(newMonthDate).getDate();
+    if (selectedDate.getDate() > lastDayOfNewMonth) {
+      newDate.setDate(lastDayOfNewMonth);
+    }
+    
     onDateSelect(newDate);
   };
   
-  const weekDays = Array.from({ length: 7 }).map((_, i) => {
-    const date = addDays(currentWeekStart, i);
-    const isToday = isSameDay(date, new Date());
-    const isSelected = isSameDay(date, selectedDate);
-    const isInFuture = date > new Date();
-    
-    return {
-      date,
-      dayOfWeek: format(date, 'E'),
-      dayOfMonth: format(date, 'd'),
-      isToday,
-      isSelected,
-      isInFuture
-    };
+  // Generate all days in the current month
+  const monthDays = eachDayOfInterval({
+    start: currentMonthDate,
+    end: endOfMonth(currentMonthDate)
   });
+
+  // Get days of week header based on first day setting
+  const getDaysOfWeek = () => {
+    const days = firstDayOfWeek === "monday" 
+      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    return days;
+  };
+
+  // Organize days into weeks for grid display
+  const organizeDaysIntoWeeks = () => {
+    const firstDay = currentMonthDate.getDay();
+    const adjustedFirstDay = (firstDay - (weekStartsOn === 1 ? 1 : 0) + 7) % 7;
+    
+    const daysWithEmptySpaces = [];
+    
+    // Add empty spaces for days before the 1st of the month
+    for (let i = 0; i < adjustedFirstDay; i++) {
+      daysWithEmptySpaces.push(null);
+    }
+    
+    // Add all days of the month
+    monthDays.forEach(day => {
+      daysWithEmptySpaces.push(day);
+    });
+    
+    // Make sure we have complete weeks (rows of 7)
+    while (daysWithEmptySpaces.length % 7 !== 0) {
+      daysWithEmptySpaces.push(null);
+    }
+    
+    // Split into weeks
+    const weeks = [];
+    for (let i = 0; i < daysWithEmptySpaces.length; i += 7) {
+      weeks.push(daysWithEmptySpaces.slice(i, i + 7));
+    }
+    
+    return weeks;
+  };
+
+  const weeks = organizeDaysIntoWeeks();
+  const daysOfWeek = getDaysOfWeek();
 
   return (
     <div className="bg-card rounded-lg border p-2">
@@ -60,20 +111,20 @@ const WeeklyDateBar: React.FC<WeeklyDateBarProps> = ({
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => navigateWeek('prev')}
+          onClick={() => navigateMonth('prev')}
           className="h-7 w-7"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         
         <span className="text-sm font-medium">
-          {format(currentWeekStart, 'MMMM d')} - {format(addDays(currentWeekStart, 6), 'MMMM d, yyyy')}
+          {format(currentMonthDate, 'MMMM yyyy')}
         </span>
         
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => navigateWeek('next')}
+          onClick={() => navigateMonth('next')}
           className="h-7 w-7"
         >
           <ChevronRight className="h-4 w-4" />
@@ -81,28 +132,47 @@ const WeeklyDateBar: React.FC<WeeklyDateBarProps> = ({
       </div>
       
       <div className="grid grid-cols-7 gap-1 text-center">
-        {weekDays.map((day, index) => (
-          <div 
-            key={index}
-            onClick={() => onDateSelect(day.date)}
-            className={cn(
-              "flex flex-col items-center p-2 rounded-md cursor-pointer transition-colors",
-              day.isSelected ? "bg-primary text-primary-foreground" : 
-              day.isToday ? "bg-muted" : "hover:bg-accent/50"
-            )}
-          >
-            <span className="text-xs font-medium">{day.dayOfWeek}</span>
-            <span className={cn(
-              "text-lg font-bold mt-1",
-              day.isInFuture ? "opacity-60" : ""
-            )}>
-              {day.dayOfMonth}
-            </span>
+        {daysOfWeek.map((day, index) => (
+          <div key={index} className="text-xs font-medium py-1">
+            {day}
           </div>
+        ))}
+
+        {weeks.map((week, weekIdx) => (
+          <React.Fragment key={weekIdx}>
+            {week.map((day, dayIdx) => {
+              if (!day) {
+                return <div key={`empty-${weekIdx}-${dayIdx}`} className="p-2"></div>;
+              }
+              
+              const isCurrentDay = isToday(day);
+              const isSelected = isSameDay(day, selectedDate);
+              const isInFuture = isBefore(new Date(), day);
+              
+              return (
+                <div 
+                  key={`day-${weekIdx}-${dayIdx}`}
+                  onClick={() => onDateSelect(day)}
+                  className={cn(
+                    "flex flex-col items-center p-1 rounded-md cursor-pointer transition-colors",
+                    isSelected ? "bg-primary text-primary-foreground" : 
+                    isCurrentDay ? "bg-muted" : "hover:bg-accent/50"
+                  )}
+                >
+                  <span className={cn(
+                    "text-lg rounded-full h-8 w-8 flex items-center justify-center",
+                    isInFuture ? "opacity-60" : ""
+                  )}>
+                    {day.getDate()}
+                  </span>
+                </div>
+              );
+            })}
+          </React.Fragment>
         ))}
       </div>
     </div>
   );
 };
 
-export default WeeklyDateBar;
+export default MonthlyDateBar;

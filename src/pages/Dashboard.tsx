@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, isBefore } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
-import WeeklyDateBar from '@/components/WeeklyDateBar';
+import MonthlyDateBar from '@/components/WeeklyDateBar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
@@ -98,24 +97,55 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [habits, events, tasks, user]);
 
-  // Filter habits, events, and tasks for the selected date
-  const filteredHabits = habits.map(habit => ({ 
-    ...habit, 
-    itemType: 'habit' as const,
-    isCompleted: habit.completionDates?.some((dateStr: string) => 
-      isSameDay(new Date(dateStr), selectedDate)
-    ) || false
-  }));
+  const filterItems = (items: any[], selectedDate: Date, itemType: 'habit' | 'event' | 'task') => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return items
+      .filter(item => {
+        if (itemType === 'habit') {
+          return true;
+        } else {
+          return item.date && isSameDay(new Date(item.date), selectedDate);
+        }
+      })
+      .filter(item => {
+        const itemStartDate = new Date(item.startDate || item.date);
+        itemStartDate.setHours(0, 0, 0, 0);
+        return !isBefore(selectedDate, itemStartDate);
+      })
+      .map(item => ({ 
+        ...item, 
+        itemType,
+        isCompleted: itemType === 'habit' 
+          ? item.completionDates?.some((dateStr: string) => 
+              isSameDay(new Date(dateStr), selectedDate)
+            ) || false
+          : item.isCompleted || false,
+        isLocked: isBefore(today, selectedDate)
+      }));
+  };
   
-  const filteredEvents = events
-    .filter(event => event.date && isSameDay(new Date(event.date), selectedDate))
-    .map(event => ({ ...event, itemType: 'event' as const }));
-  
-  const filteredTasks = tasks
-    .filter(task => task.date && isSameDay(new Date(task.date), selectedDate))
-    .map(task => ({ ...task, itemType: 'task' as const }));
+  const filteredHabits = filterItems(habits, selectedDate, 'habit');
+  const filteredEvents = filterItems(events, selectedDate, 'event');
+  const filteredTasks = filterItems(tasks, selectedDate, 'task');
 
   const toggleItemCompletion = (id: string, type: 'habit' | 'event' | 'task') => {
+    const isItemLocked = (
+      (type === 'habit' && filteredHabits.find(h => h.id === id)?.isLocked) ||
+      (type === 'event' && filteredEvents.find(e => e.id === id)?.isLocked) ||
+      (type === 'task' && filteredTasks.find(t => t.id === id)?.isLocked)
+    );
+    
+    if (isItemLocked) {
+      toast({
+        title: "Cannot complete future items",
+        description: "You cannot mark items as completed before their scheduled date.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (type === 'habit') {
       setHabits(habits.map(habit => {
         if (habit.id === id) {
@@ -179,7 +209,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     onDateSelect(date);
   };
 
-  // Render a section with a message when no items are found
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center p-8 bg-muted/20 rounded-lg text-center">
       <p className="text-lg font-medium mb-2">You are Free Today!</p>
@@ -199,14 +228,13 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       <div className="mb-6">
-        <WeeklyDateBar 
+        <MonthlyDateBar 
           selectedDate={selectedDate} 
           onDateSelect={handleDateSelection}
           firstDayOfWeek={settings.firstDayOfWeek}
         />
       </div>
 
-      {/* Habits Section */}
       <div className="mb-6 md:mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
@@ -228,6 +256,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 isOneTime={false}
                 onClick={() => toggleItemCompletion(item.id, item.itemType)}
                 onDelete={() => setItemToDelete({ id: item.id, type: item.itemType })}
+                disabled={item.isLocked}
               />
             ))}
           </div>
@@ -236,7 +265,6 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <Separator className="my-8" />
 
-      {/* Tasks Section */}
       <div className="mb-6 md:mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
@@ -258,6 +286,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 isOneTime={true}
                 onClick={() => toggleItemCompletion(item.id, item.itemType)}
                 onDelete={() => setItemToDelete({ id: item.id, type: item.itemType })}
+                disabled={item.isLocked}
               />
             ))}
           </div>
@@ -266,7 +295,6 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <Separator className="my-8" />
 
-      {/* Events Section */}
       <div className="mb-6 md:mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
@@ -288,6 +316,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 isOneTime={true}
                 onClick={() => toggleItemCompletion(item.id, item.itemType)}
                 onDelete={() => setItemToDelete({ id: item.id, type: item.itemType })}
+                disabled={item.isLocked}
               />
             ))}
           </div>

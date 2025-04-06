@@ -4,22 +4,18 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   format, 
-  addDays, 
-  subDays, 
-  startOfWeek, 
-  endOfWeek, 
-  eachDayOfInterval, 
-  isSameDay,
-  addWeeks,
-  addMonths,
-  addYears,
+  isSameDay, 
+  isBefore, 
   isAfter,
-  isBefore
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval
 } from 'date-fns';
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import MonthlyDateBar from '@/components/WeeklyDateBar';
 
 interface CalendarPageProps {
   selectedDate: Date;
@@ -85,7 +81,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   const processRecurrence = (items: any[], itemType: 'event' | 'task' | 'habit') => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const futureDate = addMonths(today, 3); // Process up to 3 months ahead
+    const monthStart = startOfMonth(viewDate);
+    const monthEnd = endOfMonth(viewDate);
     
     const processedItems: any[] = [];
     
@@ -94,7 +91,11 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
       const originalDate = new Date(item.date || item.startDate);
       const startDate = new Date(item.date || item.startDate);
       
-      // Skip if it hasn't started yet
+      // Don't show items that haven't started yet by checking against the original start date
+      const clonedStartDate = new Date(startDate);
+      clonedStartDate.setHours(0, 0, 0, 0);
+            
+      // Skip if it hasn't started yet or if no recurrence
       if (!item.recurrence || item.recurrence === 'none') {
         processedItems.push({
           ...item,
@@ -105,12 +106,15 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
         return;
       }
       
-      // For habits without one-time completion, generate recurring instances
+      // For recurring items, generate instances within this month's view
       let currentDate = new Date(startDate);
       
-      while (currentDate <= futureDate) {
-        // Only add if the date is valid
-        if (currentDate >= startDate) {
+      while (isBefore(currentDate, monthEnd) || isSameDay(currentDate, monthEnd)) {
+        // Only add if the date is valid (after or equal to start date and in current month)
+        if ((isAfter(currentDate, clonedStartDate) || isSameDay(currentDate, clonedStartDate)) && 
+            (isBefore(currentDate, monthEnd) || isSameDay(currentDate, monthEnd)) &&
+            (isAfter(currentDate, monthStart) || isSameDay(currentDate, monthStart))) {
+          
           processedItems.push({
             ...item,
             date: new Date(currentDate),
@@ -126,20 +130,21 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
         // Calculate next occurrence based on recurrence type
         switch (item.recurrence) {
           case 'daily':
-            currentDate = addDays(currentDate, 1);
+            currentDate.setDate(currentDate.getDate() + 1);
             break;
           case 'weekly':
-            currentDate = addWeeks(currentDate, 1);
+            currentDate.setDate(currentDate.getDate() + 7);
             break;
           case 'monthly':
-            currentDate = addMonths(currentDate, 1);
+            currentDate.setMonth(currentDate.getMonth() + 1);
             break;
           case 'yearly':
-            currentDate = addYears(currentDate, 1);
+            currentDate.setFullYear(currentDate.getFullYear() + 1);
             break;
           default:
             // For none or unspecified, don't create recurrences
-            currentDate = addYears(futureDate, 1); // Exit the loop
+            currentDate = new Date(monthEnd);
+            currentDate.setDate(currentDate.getDate() + 1); // Exit the loop
         }
       }
     });
@@ -159,12 +164,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
     ...processedHabits
   ];
 
-  const navigateDate = (direction: 'prev' | 'next') => {
-    setViewDate(prevDate => 
-      direction === 'prev' ? subDays(prevDate, 7) : addDays(prevDate, 7)
-    );
-  };
-
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setViewDate(date);
@@ -172,25 +171,13 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
     }
   };
 
-  // Use firstDayOfWeek setting for proper week calculation
-  const getWeekStart = (date: Date) => {
-    const weekStartsOn = settings.firstDayOfWeek === "monday" ? 1 : 0;
-    return startOfWeek(date, { weekStartsOn });
-  };
-
-  const weekStart = getWeekStart(viewDate);
-  const weekEnd = endOfWeek(viewDate, { weekStartsOn: settings.firstDayOfWeek === "monday" ? 1 : 0 });
-  const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
-
   // Check if an item should be shown for a specific day
   const itemsForDay = (day: Date) => {
-    const currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
-    
     return calendarItems.filter(item => {
       const itemDate = new Date(item.date);
       const startDate = item.startDate ? new Date(item.startDate) : itemDate;
       startDate.setHours(0, 0, 0, 0);
+      day.setHours(0, 0, 0, 0);
       
       // Only show items that have started already
       if (isBefore(day, startDate)) {
@@ -221,59 +208,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
     } else {
       return 'bg-primary/10 border-l-2 border-primary';
     }
-  };
-
-  const renderWeekView = () => {
-    const weekDays = settings.firstDayOfWeek === "monday" 
-      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    return (
-      <div>
-        <div className="p-4 grid grid-cols-7 gap-1 text-center text-xs sm:text-sm font-medium">
-          {weekDays.map(day => (
-            <div key={day}>{day}</div>
-          ))}
-        </div>
-        <div className="px-4 pb-4 grid grid-cols-7 gap-1 text-center">
-          {daysInWeek.map((date, i) => {
-            const dayEvents = itemsForDay(date);
-            const isToday = isSameDay(date, new Date());
-            const isSelected = isSameDay(date, selectedDate);
-            const locked = isItemLocked(date);
-
-            return (
-              <div 
-                key={i} 
-                className="flex flex-col"
-                onClick={() => handleDateSelect(date)}
-              >
-                <div className={`mb-1 h-8 w-8 rounded-full flex items-center justify-center mx-auto cursor-pointer transition-colors ${
-                  isSelected ? 'bg-primary text-primary-foreground' : 
-                  isToday ? 'bg-muted text-foreground' : ''
-                }`}>
-                  {date.getDate()}
-                </div>
-                <div className="flex flex-col gap-1 max-h-[120px] overflow-y-auto">
-                  {dayEvents.map((event, idx) => (
-                    <Badge 
-                      key={idx}
-                      variant={event.type === 'event' ? 'secondary' : 'outline'}
-                      className={`truncate text-xs py-0.5 ${
-                        event.isCompleted ? "opacity-70 line-through" : 
-                        locked ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-primary/90"
-                      }`}
-                    >
-                      {event.title}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
   };
 
   // Display details for selected date
@@ -334,7 +268,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
               <CalendarDays className="h-6 w-6" />
               <div>
                 <h2 className="text-xl font-semibold">
-                  {format(viewDate, 'MMMM yyyy')}
+                  Calendar
                 </h2>
               </div>
             </div>
@@ -342,29 +276,19 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
-                size="icon"
-                onClick={() => navigateDate('prev')}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
                 onClick={() => handleDateSelect(new Date())}
               >
                 Today
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigateDate('next')}
-              >
-                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
           <div className="mt-4 overflow-x-auto">
-            {renderWeekView()}
+            <MonthlyDateBar 
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
+              firstDayOfWeek={settings.firstDayOfWeek}
+            />
             {renderSelectedDateItems()}
           </div>
         </CardContent>
