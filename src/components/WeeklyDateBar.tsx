@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -8,26 +7,32 @@ import { cn } from '@/lib/utils';
 interface WeeklyDateBarProps {
   selectedDate: Date;
   onDateSelect: (date: Date) => void;
+  firstDayOfWeek?: "sunday" | "monday";
 }
 
-const WeeklyDateBar: React.FC<WeeklyDateBarProps> = ({ selectedDate, onDateSelect }) => {
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(selectedDate));
+const WeeklyDateBar: React.FC<WeeklyDateBarProps> = ({ 
+  selectedDate, 
+  onDateSelect,
+  firstDayOfWeek = "sunday"
+}) => {
+  const weekStartsOn = firstDayOfWeek === "monday" ? 1 : 0;
+  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(selectedDate, { weekStartsOn }));
   
   useEffect(() => {
     // Update week if selected date changes to a different week
-    const selectedWeekStart = startOfWeek(selectedDate);
+    const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn });
     if (!isSameDay(selectedWeekStart, currentWeekStart)) {
       setCurrentWeekStart(selectedWeekStart);
     }
-  }, [selectedDate, currentWeekStart]);
+  }, [selectedDate, currentWeekStart, weekStartsOn]);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const daysToAdd = direction === 'next' ? 7 : -7;
     const newWeekStart = addDays(currentWeekStart, daysToAdd);
     setCurrentWeekStart(newWeekStart);
     
-    // Select the same day of week in the new week
-    const dayOfWeek = selectedDate.getDay();
+    // Keep day of week when navigating
+    const dayOfWeek = (selectedDate.getDay() - weekStartsOn + 7) % 7;
     const newDate = addDays(newWeekStart, dayOfWeek);
     onDateSelect(newDate);
   };

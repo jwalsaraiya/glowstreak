@@ -6,16 +6,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { 
-  Calendar, CheckCheck, Clock, Flame, TrendingUp, 
+  CheckCheck, Clock, Flame, TrendingUp, 
   ArrowRight, ArrowUp, Zap 
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/use-auth';
-import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isWithinInterval, differenceInDays } from 'date-fns';
+import { format, subDays, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, differenceInDays } from 'date-fns';
 
 const AnalyticsPage: React.FC = () => {
   const { user } = useAuth();
-  const [range, setRange] = useState<'week' | 'month' | 'year'>('week');
+  const [range, setRange] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [habits, setHabits] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
@@ -36,46 +36,109 @@ const AnalyticsPage: React.FC = () => {
 
   // Calculate real analytics data based on actual habits, events, and tasks
   useEffect(() => {
-    if (!habits.length && !user) return;
+    if (!user) return;
 
-    // Calculate date ranges
+    // Calculate date ranges based on selected range
     const today = new Date();
-    const lastWeekStart = subDays(today, 6);
-    const weekData = eachDayOfInterval({ start: lastWeekStart, end: today });
+    let dateRange;
+    let dateFormat;
+    
+    if (range === 'daily') {
+      // Last 7 days
+      const startDate = subDays(today, 6);
+      dateRange = eachDayOfInterval({ start: startDate, end: today });
+      dateFormat = 'EEE';
+    } else if (range === 'weekly') {
+      // Last 4 weeks
+      const startDate = subDays(today, 28);
+      dateRange = [];
+      for (let i = 0; i < 4; i++) {
+        const weekStart = subDays(today, 28 - i * 7);
+        dateRange.push(weekStart);
+      }
+      dateFormat = 'MMM d';
+    } else {
+      // Last 6 months
+      dateRange = [];
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(today);
+        date.setMonth(today.getMonth() - i);
+        dateRange.push(date);
+      }
+      dateFormat = 'MMM';
+    }
 
-    // Weekly completion data
-    const weeklyCompletionData = weekData.map(date => {
-      // Get all habits that should have been completed on this date
-      const totalHabitsForDay = habits.length;
+    // Completion data for the selected time range
+    const completionData = dateRange.map(date => {
+      // For daily and weekly, we check exact days
+      // For monthly, we check the entire month
+      const startDate = range === 'monthly' 
+        ? startOfMonth(date) 
+        : range === 'weekly' 
+          ? startOfWeek(date)
+          : date;
       
-      // Count habits actually completed on this date
-      const completedHabitsForDay = habits.filter(habit => 
-        habit.completionDates?.some((dateStr: string) => 
-          isSameDay(new Date(dateStr), date)
-        )
-      ).length;
+      const endDate = range === 'monthly' 
+        ? endOfMonth(date) 
+        : range === 'weekly' 
+          ? endOfWeek(date)
+          : date;
+      
+      const periodDays = eachDayOfInterval({ start: startDate, end: endDate });
+      
+      // Total possible habit completions in this period
+      // Number of habits × number of days
+      const totalPossibleCompletions = habits.length * periodDays.length;
+      
+      // Count actual completions
+      let completedCount = 0;
+      habits.forEach(habit => {
+        periodDays.forEach(day => {
+          const isCompleted = habit.completionDates?.some((dateStr: string) => 
+            isSameDay(new Date(dateStr), day)
+          );
+          if (isCompleted) completedCount++;
+        });
+      });
       
       // Calculate completion percentage
-      const completionPercentage = totalHabitsForDay > 0 
-        ? Math.round((completedHabitsForDay / totalHabitsForDay) * 100) 
+      const completionPercentage = totalPossibleCompletions > 0 
+        ? Math.round((completedCount / totalPossibleCompletions) * 100) 
         : 0;
       
       return {
-        name: format(date, 'EEE'),
+        name: format(date, dateFormat),
         value: completionPercentage,
         date: date.toISOString(),
       };
     });
 
-    // Calculate overall completion rate (average of the week)
-    const overallCompletionRate = Math.round(
-      weeklyCompletionData.reduce((sum, item) => sum + item.value, 0) / weeklyCompletionData.length
-    );
+    // Calculate overall completion rate (average)
+    const overallCompletionRate = completionData.length > 0 
+      ? Math.round(completionData.reduce((sum, item) => sum + item.value, 0) / completionData.length)
+      : 0;
 
-    // Calculate habit strength data
+    // Calculate habit strength data - accurately capped at 100%
     const habitStrengthData = habits.map(habit => {
+      // Calculate completion percentage
+      const completionDates = habit.completionDates || [];
+      const startDate = habit.startDate ? new Date(habit.startDate) : today;
+      const daysToConsider = Math.max(1, differenceInDays(today, startDate) + 1);
+      
+      // Count unique days completed
+      const uniqueDates = new Set();
+      completionDates.forEach((dateStr: string) => {
+        const date = new Date(dateStr);
+        uniqueDates.add(format(date, 'yyyy-MM-dd'));
+      });
+      
+      const uniqueCompletedDays = uniqueDates.size;
+      
+      // Calculate percentage, capped at 100%
+      const completionPercentage = Math.min(100, Math.round((uniqueCompletedDays / daysToConsider) * 100));
+
       // Calculate current streak
-      const sortedCompletionDates = (habit.completionDates || [])
+      const sortedCompletionDates = [...completionDates]
         .map((dateStr: string) => new Date(dateStr))
         .sort((a: Date, b: Date) => b.getTime() - a.getTime());
       
@@ -91,7 +154,7 @@ const AnalyticsPage: React.FC = () => {
           let previousDate = today;
           
           // Count back from yesterday
-          for (let i = 1; i < sortedCompletionDates.length; i++) {
+          for (let i = 0; i < 365; i++) {
             const expectedDate = subDays(previousDate, 1);
             const isCompleted = sortedCompletionDates.some(date => 
               isSameDay(date, expectedDate)
@@ -106,13 +169,6 @@ const AnalyticsPage: React.FC = () => {
           }
         }
       }
-      
-      // Calculate completion percentage
-      const daysToConsider = Math.min(30, differenceInDays(today, new Date(habit.startDate)) + 1);
-      const completedDays = (habit.completionDates || []).length;
-      const completionPercentage = daysToConsider > 0 
-        ? Math.round((completedDays / daysToConsider) * 100)
-        : 0;
 
       return {
         name: habit.title,
@@ -126,44 +182,11 @@ const AnalyticsPage: React.FC = () => {
       ? habitStrengthData.reduce((max, habit) => (habit.streak > max.streak ? habit : max), habitStrengthData[0])
       : { name: 'No habits yet', streak: 0, value: 0 };
 
-    // Calculate daily time spent (estimated based on number of completed items)
-    const completedItemsToday = [
-      ...habits.filter(h => h.completionDates?.some((d: string) => isSameDay(new Date(d), today))),
-      ...tasks.filter(t => t.isCompleted && isSameDay(new Date(t.date), today)),
-      ...events.filter(e => e.isCompleted && isSameDay(new Date(e.date), today))
-    ].length;
-    
-    // Estimate 10 minutes per completed item
-    const dailyTimeSpent = completedItemsToday * 10;
-
-    // Monthly trend data
-    const monthlyTrendData = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = subDays(today, i);
-      const totalHabitsForDay = habits.length;
-      const completedHabitsForDay = habits.filter(habit => 
-        habit.completionDates?.some((dateStr: string) => 
-          isSameDay(new Date(dateStr), date)
-        )
-      ).length;
-      
-      const completionPercentage = totalHabitsForDay > 0 
-        ? Math.round((completedHabitsForDay / totalHabitsForDay) * 100) 
-        : 0;
-      
-      monthlyTrendData.push({
-        date: date.toISOString(),
-        completion: completionPercentage,
-      });
-    }
-
     setAnalyticsData({
-      weeklyCompletionData,
+      completionData,
       habitStrengthData,
       overallCompletionRate,
       longestStreakHabit,
-      dailyTimeSpent,
-      monthlyTrendData,
     });
   }, [habits, tasks, events, user, range]);
 
@@ -182,7 +205,7 @@ const AnalyticsPage: React.FC = () => {
         <p className="text-muted-foreground">Track your progress and see your habits analytics</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xl font-semibold flex items-center">
@@ -218,27 +241,9 @@ const AnalyticsPage: React.FC = () => {
             </p>
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-semibold flex items-center">
-              <Clock className="mr-2 h-5 w-5" />
-              Daily Average
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold mb-2">{analyticsData.dailyTimeSpent} min</div>
-            <p className="text-sm text-muted-foreground mb-4">Spent on habits daily</p>
-            <Progress value={(analyticsData.dailyTimeSpent / 120) * 100} className="h-2" />
-            <p className="text-sm text-muted-foreground mt-2 flex items-center">
-              <ArrowRight className="h-3 w-3 mr-1 text-primary" />
-              <span>Consistent with your goals</span>
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8">
+      <div className="grid grid-cols-1 gap-6 mb-8">
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -248,15 +253,15 @@ const AnalyticsPage: React.FC = () => {
               </CardTitle>
               <Select 
                 value={range} 
-                onValueChange={(value: 'week' | 'month' | 'year') => setRange(value)}
+                onValueChange={(value: 'daily' | 'weekly' | 'monthly') => setRange(value)}
               >
                 <SelectTrigger className="w-32 h-8">
                   <SelectValue placeholder="Select range" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="week">Last Week</SelectItem>
-                  <SelectItem value="month">Last Month</SelectItem>
-                  <SelectItem value="year">Last Year</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -265,7 +270,7 @@ const AnalyticsPage: React.FC = () => {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={analyticsData.weeklyCompletionData}
+                  data={analyticsData.completionData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -290,7 +295,7 @@ const AnalyticsPage: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold flex items-center">
-            <Calendar className="mr-2 h-5 w-5" />
+            <Clock className="mr-2 h-5 w-5" />
             Habit Strength
           </CardTitle>
         </CardHeader>

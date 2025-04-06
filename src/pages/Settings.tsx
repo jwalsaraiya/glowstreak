@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 interface UserSettings {
   compactView: boolean;
@@ -23,6 +24,7 @@ interface UserSettings {
   showCompleted: boolean;
   timeZone: string;
   firstDayOfWeek: "sunday" | "monday";
+  notificationTime: string;
 }
 
 const defaultSettings: UserSettings = {
@@ -34,7 +36,8 @@ const defaultSettings: UserSettings = {
   autoArchive: false,
   showCompleted: true,
   timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  firstDayOfWeek: "sunday"
+  firstDayOfWeek: "sunday",
+  notificationTime: "09:00"
 };
 
 const timeZones = [
@@ -86,6 +89,7 @@ const Settings = () => {
     setSettings(prev => {
       const newSettings = { ...prev, [key]: value };
       
+      // Show toast notification
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved.",
@@ -110,12 +114,14 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="appearance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 p-1 h-auto flex-wrap">
-          <TabsTrigger value="appearance" className="py-2">Appearance</TabsTrigger>
-          <TabsTrigger value="notifications" className="py-2">Notifications</TabsTrigger>
-          <TabsTrigger value="account" className="py-2">Account</TabsTrigger>
-          <TabsTrigger value="habits" className="py-2">Habits</TabsTrigger>
-        </TabsList>
+        <div className="bg-card rounded-lg p-2 mb-4 overflow-auto">
+          <TabsList className="flex w-full h-auto">
+            <TabsTrigger value="appearance" className="px-4 py-2 flex-1">Appearance</TabsTrigger>
+            <TabsTrigger value="notifications" className="px-4 py-2 flex-1">Notifications</TabsTrigger>
+            <TabsTrigger value="account" className="px-4 py-2 flex-1">Account</TabsTrigger>
+            <TabsTrigger value="habits" className="px-4 py-2 flex-1">Habits</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="appearance">
           <Card>
@@ -223,6 +229,24 @@ const Settings = () => {
                     checked={settings.reminderNotifications}
                     onCheckedChange={(checked) => updateSetting('reminderNotifications', checked)}
                   />
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="notification-time">Notification Time</Label>
+                  <Input
+                    id="notification-time"
+                    type="time"
+                    value={settings.notificationTime}
+                    onChange={(e) => updateSetting('notificationTime', e.target.value)}
+                    className="w-full max-w-[200px]"
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Set what time you'd like to receive daily notifications
+                  </p>
                 </div>
               </div>
               

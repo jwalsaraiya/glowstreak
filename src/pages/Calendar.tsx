@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, CalendarCheck, CalendarClock } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, CalendarCheck, CalendarClock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -23,6 +24,10 @@ interface UserData {
   tasks: any[];
 }
 
+interface UserSettings {
+  firstDayOfWeek: "sunday" | "monday";
+}
+
 const CalendarPage: React.FC<CalendarPageProps> = ({
   selectedDate,
   onDateSelect,
@@ -30,22 +35,32 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   onCreateOneTime,
   onCreateEvent
 }) => {
-  const [view, setView] = useState<'day' | 'month'>('month');
+  const [view, setView] = useState<'week' | 'month'>('month');
   const [viewDate, setViewDate] = useState<Date>(selectedDate);
   const [habits, setHabits] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [settings, setSettings] = useState<UserSettings>({ firstDayOfWeek: "sunday" });
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
   const fetchUserData = () => {
     if (user) {
       const userData = localStorage.getItem(`userData_${user.id}`);
+      const userSettings = localStorage.getItem(`settings_${user.id}`);
+      
       if (userData) {
         const parsedData: UserData = JSON.parse(userData);
         setHabits(parsedData.habits || []);
         setEvents(parsedData.events || []);
         setTasks(parsedData.tasks || []);
+      }
+      
+      if (userSettings) {
+        const parsedSettings = JSON.parse(userSettings);
+        setSettings({
+          firstDayOfWeek: parsedSettings.firstDayOfWeek || "sunday"
+        });
       }
     }
   };
@@ -56,18 +71,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
     return () => clearInterval(interval);
   }, [user]);
 
-  const allItems = [
-    ...habits.flatMap(habit => 
-      habit.completionDates?.map((dateStr: string) => ({
-        date: new Date(dateStr),
-        type: 'habit' as const,
-        title: habit.title,
-        id: `habit-${habit.id}-${dateStr}`,
-        isCompleted: true,
-        priority: habit.priority,
-        category: habit.category,
-      })) || []
-    ),
+  // Only include events and tasks for calendar
+  const calendarItems = [
     ...events.map(event => ({
       date: new Date(event.date),
       type: 'event' as const,
@@ -91,8 +96,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   const navigateDate = (direction: 'prev' | 'next') => {
     let newDate: Date;
     
-    if (view === 'day') {
-      newDate = direction === 'prev' ? subDays(viewDate, 1) : addDays(viewDate, 1);
+    if (view === 'week') {
+      newDate = direction === 'prev' ? subDays(viewDate, 7) : addDays(viewDate, 7);
     } else {
       newDate = direction === 'prev' ? subDays(viewDate, 30) : addDays(viewDate, 30);
     }
@@ -107,20 +112,24 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
     }
   };
 
-  const weekStart = startOfWeek(viewDate);
-  const weekEnd = endOfWeek(viewDate);
+  // Use firstDayOfWeek setting for proper week calculation
+  const getWeekStart = (date: Date) => {
+    const weekStartsOn = settings.firstDayOfWeek === "monday" ? 1 : 0;
+    return startOfWeek(date, { weekStartsOn });
+  };
+
+  const weekStart = getWeekStart(viewDate);
+  const weekEnd = endOfWeek(viewDate, { weekStartsOn: settings.firstDayOfWeek === "monday" ? 1 : 0 });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const itemsForDay = (day: Date) => {
-    return allItems.filter(item => 
+    return calendarItems.filter(item => 
       isSameDay(item.date, day)
     );
   };
 
   const getItemTypeColor = (type: string, priority: string = 'medium') => {
-    if (type === 'habit') {
-      return 'bg-primary/10 border-l-2 border-primary';
-    } else if (type === 'event') {
+    if (type === 'event') {
       return 'bg-secondary border-l-2 border-blue-400';
     } else {
       if (priority === 'high') {
@@ -131,48 +140,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
     }
   };
 
-  const renderDayView = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-2">
-        {[...Array(24)].map((_, hour) => (
-          <div key={hour} className="flex items-start h-20 border-t">
-            <div className="w-16 text-xs text-muted-foreground pr-2 pt-1 text-right">
-              {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
-            </div>
-            <div className="flex-1 relative min-h-[5rem]">
-              {allItems
-                .filter(item => {
-                  const itemDate = new Date(item.date);
-                  const itemHour = itemDate.getHours();
-                  return isSameDay(itemDate, viewDate) && (itemHour === hour || hour === 9); // Default to 9AM if no time
-                })
-                .map((item, idx) => (
-                  <div 
-                    key={item.id} 
-                    className={`absolute left-0 right-4 px-3 py-1 rounded-md ${
-                      getItemTypeColor(item.type, item.priority)
-                    } ${item.isCompleted ? 'opacity-60' : ''}`}
-                    style={{
-                      top: `${((idx * 20) % 80)}%`,
-                      height: '80%',
-                      maxHeight: '50px',
-                    }}
-                  >
-                    <div className="font-medium text-sm truncate">{item.title}</div>
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {format(item.date, 'h:mm a')}
-                      <Badge variant="outline" className="ml-1 h-4 text-[10px]">{item.type}</Badge>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   const renderMonthView = () => (
     <div className="space-y-4">
       <CalendarComponent
@@ -181,7 +148,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
         onSelect={handleDateSelect}
         className="rounded-md border"
         modifiers={{
-          booked: allItems.map(item => item.date),
+          booked: calendarItems.map(item => item.date),
         }}
         modifiersStyles={{
           booked: {
@@ -218,28 +185,74 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
               </div>
             ))
           ) : (
-            <p className="text-muted-foreground text-center py-4">
-              No items scheduled for this day. 
-              <Button 
-                variant="link" 
-                className="p-0 h-auto text-primary" 
-                onClick={onCreateOneTime}
-              >
-                Add one?
-              </Button>
-            </p>
+            <div className="text-center py-8 space-y-2">
+              <p className="text-lg font-medium">You are Free Today!</p>
+              <p className="text-muted-foreground">Maybe you can write a review.</p>
+            </div>
           )}
         </div>
       </div>
     </div>
   );
 
+  const renderWeekView = () => {
+    const weekDays = settings.firstDayOfWeek === "monday" 
+      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return (
+      <div>
+        <div className="p-4 grid grid-cols-7 gap-1 text-center text-xs sm:text-sm font-medium">
+          {weekDays.map(day => (
+            <div key={day}>{day}</div>
+          ))}
+        </div>
+        <div className="px-4 pb-4 grid grid-cols-7 gap-1 text-center">
+          {daysInWeek.map((date, i) => {
+            const dateStr = date.toDateString();
+            const dayEvents = itemsForDay(date);
+            const isToday = isSameDay(date, new Date());
+            const isSelected = isSameDay(date, selectedDate);
+
+            return (
+              <div 
+                key={i} 
+                className="flex flex-col"
+                onClick={() => handleDateSelect(date)}
+              >
+                <div className={`mb-1 h-8 w-8 rounded-full flex items-center justify-center mx-auto cursor-pointer transition-colors ${
+                  isSelected ? 'bg-primary text-primary-foreground' : 
+                  isToday ? 'bg-muted text-foreground' : ''
+                }`}>
+                  {date.getDate()}
+                </div>
+                <div className="flex flex-col gap-1 max-h-[120px] overflow-y-auto">
+                  {dayEvents.map((event, idx) => (
+                    <Badge 
+                      key={idx}
+                      variant={event.type === 'event' ? 'secondary' : 'outline'}
+                      className={`truncate text-xs py-0.5 cursor-pointer ${
+                        event.isCompleted ? "opacity-70 line-through" : "hover:bg-primary/90"
+                      }`}
+                    >
+                      {event.title}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto py-6 max-w-7xl px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Calendar</h1>
         <p className="text-muted-foreground">
-          View and manage your habits and events
+          View and manage your events and tasks
         </p>
       </div>
 
@@ -250,7 +263,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
               <CalendarDays className="h-6 w-6" />
               <div>
                 <h2 className="text-xl font-semibold">
-                  {view === 'day' && format(viewDate, 'EEEE, MMMM d, yyyy')}
+                  {view === 'week' && format(viewDate, 'MMMM yyyy')}
                   {view === 'month' && format(viewDate, 'MMMM yyyy')}
                 </h2>
               </div>
@@ -284,44 +297,18 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
             <Tabs 
               defaultValue={view} 
               value={view} 
-              onValueChange={(value) => setView(value as 'day' | 'month')}
+              onValueChange={(value) => setView(value as 'week' | 'month')}
               className="w-full max-w-xs"
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="day">Day</TabsTrigger>
+                <TabsTrigger value="week">Week</TabsTrigger>
                 <TabsTrigger value="month">Month</TabsTrigger>
               </TabsList>
             </Tabs>
-
-            <div className="flex gap-2 w-full md:w-auto justify-between md:justify-end">
-              <Button 
-                variant="outline"
-                className="gap-1" 
-                onClick={onCreateOneTime}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="inline text-sm md:text-base">New Task</span>
-              </Button>
-              <Button 
-                variant="secondary"
-                className="gap-1" 
-                onClick={onCreateEvent}
-              >
-                <CalendarClock className="h-4 w-4" />
-                <span className="inline text-sm md:text-base">New Event</span>
-              </Button>
-              <Button 
-                className="gap-1" 
-                onClick={onCreateHabit}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="inline text-sm md:text-base">New Habit</span>
-              </Button>
-            </div>
           </div>
 
           <div className="mt-4 overflow-x-auto">
-            {view === 'day' && renderDayView()}
+            {view === 'week' && renderWeekView()}
             {view === 'month' && renderMonthView()}
           </div>
         </CardContent>

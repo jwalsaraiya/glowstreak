@@ -1,9 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, isSameDay } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
 import WeeklyDateBar from '@/components/WeeklyDateBar';
-import { CalendarCheck, CalendarClock, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
@@ -18,11 +17,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Separator } from '@/components/ui/separator';
 
 interface UserData {
   habits: any[];
   events: any[];
   tasks: any[];
+}
+
+interface UserSettings {
+  firstDayOfWeek: "sunday" | "monday";
 }
 
 interface DashboardProps {
@@ -45,6 +49,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [habits, setHabits] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [settings, setSettings] = useState<UserSettings>({ firstDayOfWeek: "sunday" });
   const [itemToDelete, setItemToDelete] = useState<{id: string, type: 'habit' | 'event' | 'task'} | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -58,11 +63,20 @@ const Dashboard: React.FC<DashboardProps> = ({
   const fetchUserData = () => {
     if (user) {
       const userData = localStorage.getItem(`userData_${user.id}`);
+      const userSettings = localStorage.getItem(`settings_${user.id}`);
+      
       if (userData) {
         const parsedData: UserData = JSON.parse(userData);
         setHabits(parsedData.habits || []);
         setEvents(parsedData.events || []);
         setTasks(parsedData.tasks || []);
+      }
+      
+      if (userSettings) {
+        const parsedSettings = JSON.parse(userSettings);
+        setSettings({
+          firstDayOfWeek: parsedSettings.firstDayOfWeek || "sunday"
+        });
       }
     }
   };
@@ -84,26 +98,22 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [habits, events, tasks, user]);
 
-  const filteredItems = [
-    ...habits.map(habit => ({ ...habit, itemType: 'habit' as const })),
-    ...events
-      .filter(event => event.date && isSameDay(new Date(event.date), selectedDate))
-      .map(event => ({ ...event, itemType: 'event' as const })),
-    ...tasks
-      .filter(task => task.date && isSameDay(new Date(task.date), selectedDate))
-      .map(task => ({ ...task, itemType: 'task' as const }))
-  ];
-
-  const itemsWithCompletionStatus = filteredItems.map(item => {
-    const isCompletedOnSelectedDate = item.completionDates?.some((dateStr: string) => 
+  // Filter habits, events, and tasks for the selected date
+  const filteredHabits = habits.map(habit => ({ 
+    ...habit, 
+    itemType: 'habit' as const,
+    isCompleted: habit.completionDates?.some((dateStr: string) => 
       isSameDay(new Date(dateStr), selectedDate)
-    ) || false;
-
-    return {
-      ...item,
-      isCompleted: isCompletedOnSelectedDate
-    };
-  });
+    ) || false
+  }));
+  
+  const filteredEvents = events
+    .filter(event => event.date && isSameDay(new Date(event.date), selectedDate))
+    .map(event => ({ ...event, itemType: 'event' as const }));
+  
+  const filteredTasks = tasks
+    .filter(task => task.date && isSameDay(new Date(task.date), selectedDate))
+    .map(task => ({ ...task, itemType: 'task' as const }));
 
   const toggleItemCompletion = (id: string, type: 'habit' | 'event' | 'task') => {
     if (type === 'habit') {
@@ -169,6 +179,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     onDateSelect(date);
   };
 
+  // Render a section with a message when no items are found
+  const renderEmptyState = () => (
+    <div className="flex flex-col items-center justify-center p-8 bg-muted/20 rounded-lg text-center">
+      <p className="text-lg font-medium mb-2">You are Free Today!</p>
+      <p className="text-muted-foreground">Maybe you can write a review.</p>
+    </div>
+  );
+
   return (
     <div className="container mx-auto py-4 md:py-6 px-4 md:px-6 max-w-7xl">
       <div className="mb-4 md:mb-8 flex items-center justify-between flex-wrap gap-3 dashboard-header">
@@ -183,68 +201,97 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="mb-6">
         <WeeklyDateBar 
           selectedDate={selectedDate} 
-          onDateSelect={handleDateSelection} 
+          onDateSelect={handleDateSelection}
+          firstDayOfWeek={settings.firstDayOfWeek}
         />
       </div>
 
+      {/* Habits Section */}
       <div className="mb-6 md:mb-8">
-        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
-            {isSameDay(selectedDate, new Date()) ? "Today's Activities" : `Activities for ${format(selectedDate, 'MMM d')}`}
+            {isSameDay(selectedDate, new Date()) ? "Today's Habits" : `Habits for ${format(selectedDate, 'MMM d')}`}
           </h2>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAddTask}
-              className="gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="inline">New Task</span>
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={onAddEvent}
-              className="gap-1"
-            >
-              <CalendarClock className="h-4 w-4" />
-              <span className="inline">New Event</span>
-            </Button>
-            <Button
-              size="sm"
-              onClick={onAddHabit}
-              className="gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="inline">New Habit</span>
-            </Button>
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 habit-grid">
-          {itemsWithCompletionStatus.map((item) => (
-            <HabitCard
-              key={`${item.itemType}-${item.id}`}
-              title={item.title}
-              description={item.description}
-              category={item.category}
-              streak={item.streak || 0}
-              priority={item.priority}
-              isCompleted={item.isCompleted}
-              isOneTime={item.itemType !== 'habit'}
-              onClick={() => toggleItemCompletion(item.id, item.itemType)}
-              onDelete={() => setItemToDelete({ id: item.id, type: item.itemType })}
-            />
-          ))}
-          <div 
-            className="placeholder-card flex items-center justify-center h-full min-h-[140px] border-2"
-            onClick={onAddHabit}
-          >
-            <Plus className="h-6 w-6 text-muted-foreground mb-2" />
-            <span className="text-muted-foreground font-medium">New Habit</span>
+        {filteredHabits.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredHabits.map((item) => (
+              <HabitCard
+                key={`${item.itemType}-${item.id}`}
+                title={item.title}
+                description={item.description}
+                category={item.category}
+                streak={item.streak || 0}
+                priority={item.priority}
+                isCompleted={item.isCompleted}
+                isOneTime={false}
+                onClick={() => toggleItemCompletion(item.id, item.itemType)}
+                onDelete={() => setItemToDelete({ id: item.id, type: item.itemType })}
+              />
+            ))}
           </div>
+        ) : renderEmptyState()}
+      </div>
+
+      <Separator className="my-8" />
+
+      {/* Tasks Section */}
+      <div className="mb-6 md:mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">
+            {isSameDay(selectedDate, new Date()) ? "Today's Tasks" : `Tasks for ${format(selectedDate, 'MMM d')}`}
+          </h2>
         </div>
+
+        {filteredTasks.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredTasks.map((item) => (
+              <HabitCard
+                key={`${item.itemType}-${item.id}`}
+                title={item.title}
+                description={item.description}
+                category={item.category}
+                streak={0}
+                priority={item.priority}
+                isCompleted={item.isCompleted}
+                isOneTime={true}
+                onClick={() => toggleItemCompletion(item.id, item.itemType)}
+                onDelete={() => setItemToDelete({ id: item.id, type: item.itemType })}
+              />
+            ))}
+          </div>
+        ) : renderEmptyState()}
+      </div>
+
+      <Separator className="my-8" />
+
+      {/* Events Section */}
+      <div className="mb-6 md:mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">
+            {isSameDay(selectedDate, new Date()) ? "Today's Events" : `Events for ${format(selectedDate, 'MMM d')}`}
+          </h2>
+        </div>
+
+        {filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredEvents.map((item) => (
+              <HabitCard
+                key={`${item.itemType}-${item.id}`}
+                title={item.title}
+                description={item.description}
+                category={item.category}
+                streak={0}
+                priority={item.priority}
+                isCompleted={item.isCompleted}
+                isOneTime={true}
+                onClick={() => toggleItemCompletion(item.id, item.itemType)}
+                onDelete={() => setItemToDelete({ id: item.id, type: item.itemType })}
+              />
+            ))}
+          </div>
+        ) : renderEmptyState()}
       </div>
 
       <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
