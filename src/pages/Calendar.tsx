@@ -15,7 +15,7 @@ import { CalendarDays } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-mobile';
-import MonthlyDateBar from '@/components/WeeklyDateBar';
+import MonthlyDateBar from '@/components/MonthlyDateBar';
 
 interface CalendarPageProps {
   selectedDate: Date;
@@ -227,7 +227,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                 key={item.id}
                 className={`p-3 rounded-md ${getItemTypeColor(item.type, item.priority)} ${
                   item.isCompleted ? 'line-through opacity-70' : 
-                  locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                  locked ? 'opacity-50' : 'cursor-pointer'
                 }`}
               >
                 <div className="flex justify-between items-center">
@@ -288,6 +288,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
               selectedDate={selectedDate}
               onDateSelect={handleDateSelect}
               firstDayOfWeek={settings.firstDayOfWeek}
+              events={calendarItems}
             />
             {renderSelectedDateItems()}
           </div>
