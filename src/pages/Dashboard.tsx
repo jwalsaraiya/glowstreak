@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { format, isSameDay, isBefore } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
 import WeeklyDateBar from '@/components/WeeklyDateBar';
+import { Button } from '@/components/ui/button'; // Add this import for the Button component
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
