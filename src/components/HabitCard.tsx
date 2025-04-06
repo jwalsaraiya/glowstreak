@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, CheckCircle2, Circle, Flame, Calendar, Clock } from 'lucide-react';
+import { Trash2, CheckCircle2, Circle, Flame, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ interface HabitCardProps {
   isCompleted: boolean;
   isOneTime?: boolean;
   disabled?: boolean;
+  itemType?: 'habit' | 'event' | 'task';
   onClick: () => void;
   onDelete: () => void;
 }
@@ -27,6 +28,7 @@ const HabitCard: React.FC<HabitCardProps> = ({
   isCompleted,
   isOneTime = false,
   disabled = false,
+  itemType = 'habit',
   onClick,
   onDelete
 }) => {
@@ -55,24 +57,26 @@ const HabitCard: React.FC<HabitCardProps> = ({
         isCompleted ? 'opacity-70' : 'opacity-100',
         getPriorityColor()
       )}
-      onClick={disabled ? undefined : onClick}
     >
       <Button
         variant="ghost"
         size="icon"
-        className="absolute top-1 right-1 h-6 w-6 rounded-full hover:bg-destructive/10"
+        className="absolute top-2 right-2 h-6 w-6 rounded-full hover:bg-destructive/10"
         onClick={handleDelete}
       >
-        <X className="h-4 w-4" />
+        <Trash2 className="h-4 w-4 text-destructive" />
       </Button>
 
-      <div className="flex items-start gap-2 mb-2 mt-2">
+      <div className="flex items-start gap-3 mt-2 mb-2">
         <div 
           className={cn(
             "mt-0.5 flex-shrink-0",
             disabled ? "opacity-50" : "cursor-pointer"
           )}
-          onClick={disabled ? undefined : onClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!disabled) onClick();
+          }}
         >
           {isCompleted ? (
             <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -80,7 +84,7 @@ const HabitCard: React.FC<HabitCardProps> = ({
             <Circle className="h-5 w-5 text-muted-foreground" />
           )}
         </div>
-        <div className="flex-1 pr-6">
+        <div className="flex-1 pr-8">
           <h3 className={cn(
             "font-medium leading-tight",
             isCompleted && "line-through"
@@ -102,16 +106,18 @@ const HabitCard: React.FC<HabitCardProps> = ({
           </Badge>
         )}
         
-        {isOneTime ? (
-          <Badge variant="secondary" className="text-xs flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            One time
-          </Badge>
-        ) : (
-          <Badge variant="secondary" className="text-xs flex items-center gap-1">
-            <Flame className="h-3 w-3" />
-            Streak: {streak}
-          </Badge>
+        {itemType === 'habit' && (
+          isOneTime ? (
+            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              One time
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+              <Flame className="h-3 w-3" />
+              Streak: {streak}
+            </Badge>
+          )
         )}
         
         {disabled && (

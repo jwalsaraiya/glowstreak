@@ -11,7 +11,7 @@ import {
   endOfMonth,
   eachDayOfInterval
 } from 'date-fns';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Flame } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -158,11 +158,18 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   const processedHabits = processRecurrence(habits, 'habit');
 
   // All calendar items
-  const calendarItems = [
+  const allCalendarItems = [
     ...processedEvents,
     ...processedTasks,
     ...processedHabits
   ];
+  
+  // Filter out only high priority tasks and events for month view
+  const calendarItems = allCalendarItems.filter(item => 
+    // Show only high priority tasks and events in the month view, no habits
+    (item.type === 'task' || item.type === 'event') && 
+    item.priority === 'high'
+  );
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -173,7 +180,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
 
   // Check if an item should be shown for a specific day
   const itemsForDay = (day: Date) => {
-    return calendarItems.filter(item => {
+    return allCalendarItems.filter(item => {
       const itemDate = new Date(item.date);
       const startDate = item.startDate ? new Date(item.startDate) : itemDate;
       startDate.setHours(0, 0, 0, 0);
@@ -198,7 +205,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   // Get item type styling
   const getItemTypeColor = (type: string, priority: string = 'medium') => {
     if (type === 'event') {
-      return 'bg-secondary border-l-2 border-blue-400';
+      return priority === 'high' ? 
+        'bg-blue-200 border-l-2 border-blue-500' : 
+        'bg-secondary border-l-2 border-blue-400';
     } else if (type === 'task') {
       if (priority === 'high') {
         return 'bg-destructive/10 border-l-2 border-destructive';
@@ -238,6 +247,12 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                   <span className="text-xs text-muted-foreground block mt-1">
                     Category: {item.category}
                   </span>
+                )}
+                {item.type === 'habit' && !item.isOneTime && (
+                  <div className="text-xs flex items-center mt-1 text-muted-foreground">
+                    <Flame className="h-3 w-3 mr-1" />
+                    Streak: {item.streak || 0}
+                  </div>
                 )}
               </div>
             ))

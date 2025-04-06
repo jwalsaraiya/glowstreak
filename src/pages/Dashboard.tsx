@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { format, isSameDay, isBefore } from 'date-fns';
+import { format, isSameDay, isBefore, startOfDay, endOfMonth, eachDayOfInterval, addDays, subDays } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
 import WeeklyDateBar from '@/components/WeeklyDateBar';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Separator } from '@/components/ui/separator';
+import { Plus } from 'lucide-react';
 
 interface UserData {
   habits: any[];
@@ -98,6 +100,38 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [habits, events, tasks, user]);
 
+  // Calculate streaks for habits
+  const calculateStreak = (habitId: string) => {
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit || !habit.completionDates || habit.completionDates.length === 0) {
+      return 0;
+    }
+
+    // Sort completion dates
+    const sortedDates = [...habit.completionDates].map(d => new Date(d)).sort((a, b) => a.getTime() - b.getTime());
+    
+    // Calculate current streak (consecutive days up to today)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let currentStreak = 0;
+    let checkDate = new Date(today);
+    
+    // Check backward from today to find the current streak
+    while (true) {
+      const dateCompleted = sortedDates.some(date => isSameDay(date, checkDate));
+      
+      if (!dateCompleted) {
+        break;
+      }
+      
+      currentStreak++;
+      checkDate = subDays(checkDate, 1);
+    }
+    
+    return currentStreak;
+  };
+
   const filterItems = (items: any[], selectedDate: Date, itemType: 'habit' | 'event' | 'task') => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -115,16 +149,22 @@ const Dashboard: React.FC<DashboardProps> = ({
         itemStartDate.setHours(0, 0, 0, 0);
         return !isBefore(selectedDate, itemStartDate);
       })
-      .map(item => ({ 
-        ...item, 
-        itemType,
-        isCompleted: itemType === 'habit' 
-          ? item.completionDates?.some((dateStr: string) => 
-              isSameDay(new Date(dateStr), selectedDate)
-            ) || false
-          : item.isCompleted || false,
-        isLocked: isBefore(today, selectedDate)
-      }));
+      .map(item => {
+        // Calculate streaks for habits
+        const streak = itemType === 'habit' ? calculateStreak(item.id) : 0;
+        
+        return { 
+          ...item, 
+          itemType,
+          streak,
+          isCompleted: itemType === 'habit' 
+            ? item.completionDates?.some((dateStr: string) => 
+                isSameDay(new Date(dateStr), selectedDate)
+              ) || false
+            : item.isCompleted || false,
+          isLocked: isBefore(today, selectedDate)
+        };
+      });
   };
   
   const filteredHabits = filterItems(habits, selectedDate, 'habit');
@@ -216,6 +256,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const getItemSection = (title: string, items: any[], itemType: 'habit' | 'event' | 'task') => {
+    // Define button background colors based on item type
+    const buttonBgClass = 
+      itemType === 'habit' ? 'bg-primary/10 hover:bg-primary/20' : 
+      itemType === 'task' ? 'bg-yellow-100 hover:bg-yellow-200' : 
+      'bg-blue-100 hover:bg-blue-200';
+
     if (items.length === 0) {
       return (
         <div className="space-y-4">
@@ -224,12 +270,14 @@ const Dashboard: React.FC<DashboardProps> = ({
             <Button 
               variant="ghost" 
               size="sm" 
+              className={`gap-1 ${buttonBgClass}`}
               onClick={() => {
                 if (itemType === 'habit') onAddHabit();
                 if (itemType === 'event') onAddEvent();
                 if (itemType === 'task') onAddTask();
               }}
             >
+              <Plus className="h-4 w-4" />
               Add {itemType}
             </Button>
           </div>
@@ -248,12 +296,14 @@ const Dashboard: React.FC<DashboardProps> = ({
           <Button 
             variant="ghost" 
             size="sm" 
+            className={`gap-1 ${buttonBgClass}`}
             onClick={() => {
               if (itemType === 'habit') onAddHabit();
               if (itemType === 'event') onAddEvent();
               if (itemType === 'task') onAddTask();
             }}
           >
+            <Plus className="h-4 w-4" />
             Add {itemType}
           </Button>
         </div>
@@ -269,6 +319,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               isCompleted={item.isCompleted}
               isOneTime={item.recurrence === 'none'}
               disabled={item.isLocked}
+              itemType={itemType}
               onClick={() => toggleItemCompletion(item.id, itemType)}
               onDelete={() => confirmDelete(item.id, itemType)}
             />
