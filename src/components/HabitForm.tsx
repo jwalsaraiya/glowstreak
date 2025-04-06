@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -136,7 +135,7 @@ const HabitForm: React.FC<HabitFormProps> = ({
       case 'event':
         return 'Create New Event';
       case 'task':
-        return 'Create One-time Task';
+        return 'Create New Task';
       default:
         return 'Create New Item';
     }
@@ -150,7 +149,7 @@ const HabitForm: React.FC<HabitFormProps> = ({
       case 'event':
         return 'Add an event to your calendar.';
       case 'task':
-        return 'Add a one-time task to your schedule.';
+        return 'Add a task to your schedule.';
       default:
         return 'Fill in the details below.';
     }
@@ -309,46 +308,33 @@ const HabitForm: React.FC<HabitFormProps> = ({
                 )}
               />
 
-              {itemType !== 'task' && (
-                <FormField
-                  control={form.control}
-                  name="recurrence"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Recurrence</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select frequency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {itemType === 'habit' ? (
-                            <>
-                              <SelectItem value="daily">Daily</SelectItem>
-                              <SelectItem value="weekly">Weekly</SelectItem>
-                              <SelectItem value="monthly">Monthly</SelectItem>
-                              <SelectItem value="custom">Custom</SelectItem>
-                            </>
-                          ) : (
-                            <>
-                              <SelectItem value="none">One-time</SelectItem>
-                              <SelectItem value="daily">Daily</SelectItem>
-                              <SelectItem value="weekly">Weekly</SelectItem>
-                              <SelectItem value="monthly">Monthly</SelectItem>
-                              <SelectItem value="custom">Custom</SelectItem>
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={form.control}
+                name="recurrence"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Recurrence</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">One-time</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <FormField

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -37,7 +36,6 @@ const defaultSettings: UserSettings = {
   firstDayOfWeek: "sunday"
 };
 
-// List of common time zones
 const timeZones = [
   "America/New_York",
   "America/Chicago",
@@ -62,14 +60,12 @@ const Settings = () => {
   const { toast } = useToast();
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
 
-  // Load settings from localStorage
   useEffect(() => {
     if (user) {
       const savedSettings = localStorage.getItem(`settings_${user.id}`);
@@ -79,7 +75,6 @@ const Settings = () => {
     }
   }, [user]);
 
-  // Save settings to localStorage whenever they change
   useEffect(() => {
     if (user) {
       localStorage.setItem(`settings_${user.id}`, JSON.stringify(settings));
@@ -114,7 +109,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="appearance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 md:max-w-2xl">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 overflow-auto md:overflow-visible max-w-full md:max-w-2xl">
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>

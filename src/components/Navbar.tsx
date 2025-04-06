@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Bell, Calendar, Home, Menu, PieChart, Plus, Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useLocation, Link } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/hooks/use-auth';
 
 interface NavItemProps {
   icon: React.ElementType;
@@ -45,6 +45,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
   const currentPath = location.pathname;
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
   
   const toggleMenu = () => setIsOpen(!isOpen);
   
@@ -56,8 +57,8 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
     "h-screen border-r flex flex-col justify-between p-2 md:p-4 transition-all duration-300",
     isMobile ? (
       isOpen 
-        ? "fixed inset-y-0 right-0 w-64 z-50 bg-background shadow-lg transform translate-x-0" 
-        : "fixed inset-y-0 right-0 w-64 z-50 bg-background shadow-lg transform translate-x-full"
+        ? "fixed inset-y-0 left-0 right-0 max-w-[280px] ml-auto w-full z-50 bg-background shadow-lg transform translate-x-0" 
+        : "fixed inset-y-0 left-0 right-0 max-w-[280px] ml-auto w-full z-50 bg-background shadow-lg transform translate-x-full"
     ) : "w-16 md:w-64 relative ml-auto"
   );
 
@@ -94,7 +95,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
               className="w-full gap-1 md:gap-2 bg-primary hover:bg-primary/90 px-2 md:px-4"
             >
               <Plus className="h-5 w-5" />
-              {(!isMobile || isOpen) && <span className="hidden md:inline">New Habit</span>}
+              {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>+ New Habit</span>}
             </Button>
             
             <Button
@@ -106,7 +107,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
               className="w-full gap-1 md:gap-2 px-2 md:px-4"
             >
               <Plus className="h-5 w-5" />
-              {(!isMobile || isOpen) && <span className="hidden md:inline">One-time Task</span>}
+              {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>+ New Task</span>}
             </Button>
             
             <Button
@@ -118,7 +119,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
               className="w-full gap-1 md:gap-2 px-2 md:px-4"
             >
               <Calendar className="h-5 w-5" />
-              {(!isMobile || isOpen) && <span className="hidden md:inline">New Event</span>}
+              {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>+ New Event</span>}
             </Button>
           </div>
 
@@ -165,12 +166,12 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
           <div className="pt-4 border-t flex items-center justify-center md:justify-start">
             <Avatar className="h-9 w-9 mr-2">
               <AvatarImage src="/placeholder.svg" />
-              <AvatarFallback>US</AvatarFallback>
+              <AvatarFallback>{user?.username?.substring(0, 2) || 'US'}</AvatarFallback>
             </Avatar>
             {(!isMobile || isOpen) && (
-              <div className="text-sm hidden md:block">
-                <div className="font-medium">User</div>
-                <div className="text-muted-foreground text-xs">user@example.com</div>
+              <div className="text-sm md:block">
+                <div className="font-medium">{user?.username || 'User'}</div>
+                <div className="text-muted-foreground text-xs">{user?.email || 'user@example.com'}</div>
               </div>
             )}
           </div>

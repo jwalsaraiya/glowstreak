@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, isSameDay } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
 import WeeklyDateBar from '@/components/WeeklyDateBar';
-import { CalendarPlus, Plus } from 'lucide-react';
+import { CalendarCheck, CalendarClock, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -56,7 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [isAuthenticated, navigate]);
 
-  useEffect(() => {
+  const fetchUserData = () => {
     if (user) {
       const userData = localStorage.getItem(`userData_${user.id}`);
       if (userData) {
@@ -66,6 +65,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         setTasks(parsedData.tasks || []);
       }
     }
+  };
+
+  useEffect(() => {
+    fetchUserData();
   }, [user]);
 
   useEffect(() => {
@@ -79,7 +82,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [habits, events, tasks, user]);
 
-  // Filter items for the selected date
   const filteredItems = [
     ...habits.map(habit => ({ ...habit, itemType: 'habit' as const })),
     ...events
@@ -195,8 +197,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               onClick={onAddTask}
               className="gap-1"
             >
-              <CalendarPlus className="h-4 w-4" />
-              {!isMobile && "One-time Task"}
+              <CalendarCheck className="h-4 w-4" />
+              <span className="hidden sm:inline">+ New Task</span>
             </Button>
             <Button
               size="sm"
@@ -204,8 +206,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               onClick={onAddEvent}
               className="gap-1"
             >
-              <CalendarPlus className="h-4 w-4" />
-              {!isMobile && "New Event"}
+              <CalendarClock className="h-4 w-4" />
+              <span className="hidden sm:inline">+ New Event</span>
             </Button>
             <Button
               size="sm"
@@ -213,7 +215,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               className="gap-1"
             >
               <Plus className="h-4 w-4" />
-              {!isMobile && "New Habit"}
+              <span className="hidden sm:inline">+ New Habit</span>
             </Button>
           </div>
         </div>
@@ -238,7 +240,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             onClick={onAddHabit}
           >
             <Plus className="h-6 w-6 text-muted-foreground mb-2" />
-            <span className="text-muted-foreground font-medium">Add New Habit</span>
+            <span className="text-muted-foreground font-medium">+ New Habit</span>
           </div>
         </div>
       </div>

@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, CalendarCheck, CalendarClock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -37,7 +36,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   const [tasks, setTasks] = useState<any[]>([]);
   const { user } = useAuth();
 
-  useEffect(() => {
+  const fetchUserData = () => {
     if (user) {
       const userData = localStorage.getItem(`userData_${user.id}`);
       if (userData) {
@@ -47,9 +46,12 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
         setTasks(parsedData.tasks || []);
       }
     }
+  };
+
+  useEffect(() => {
+    fetchUserData();
   }, [user]);
 
-  // Combine all items for calendar display
   const allItems = [
     ...habits.flatMap(habit => 
       habit.completionDates?.map((dateStr: string) => ({
@@ -138,7 +140,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                 .filter(item => {
                   const itemDate = new Date(item.date);
                   const itemHour = itemDate.getHours();
-                  return isSameDay(itemDate, selectedDate) && (itemHour === hour || hour === 9); // Default to 9AM if no time
+                  return isSameDay(itemDate, viewDate) && (itemHour === hour || hour === 9); // Default to 9AM if no time
                 })
                 .map((item, idx) => (
                   <div 
@@ -244,7 +246,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
               <CalendarDays className="h-6 w-6" />
               <div>
                 <h2 className="text-xl font-semibold">
-                  {view === 'day' && format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                  {view === 'day' && format(viewDate, 'EEEE, MMMM d, yyyy')}
                   {view === 'month' && format(viewDate, 'MMMM yyyy')}
                 </h2>
               </div>
@@ -293,23 +295,23 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                 className="gap-1" 
                 onClick={onCreateOneTime}
               >
-                <Plus className="h-4 w-4" />
-                Task
+                <CalendarCheck className="h-4 w-4" />
+                <span className="hidden md:inline">+ New Task</span>
               </Button>
               <Button 
                 variant="secondary"
                 className="gap-1" 
                 onClick={onCreateEvent}
               >
-                <Plus className="h-4 w-4" />
-                Event
+                <CalendarClock className="h-4 w-4" />
+                <span className="hidden md:inline">+ New Event</span>
               </Button>
               <Button 
                 className="gap-1" 
                 onClick={onCreateHabit}
               >
                 <Plus className="h-4 w-4" />
-                Habit
+                <span className="hidden md:inline">+ New Habit</span>
               </Button>
             </div>
           </div>

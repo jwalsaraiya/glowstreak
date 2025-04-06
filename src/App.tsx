@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -39,11 +39,44 @@ const AppContent: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [formType, setFormType] = React.useState<ItemType>('habit');
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   const handleCreateItem = (values: any) => {
-    let message = '';
+    // Get existing user data
+    const { user } = useAuth();
+    if (!user) return;
     
+    const userData = localStorage.getItem(`userData_${user.id}`);
+    const parsedData = userData ? JSON.parse(userData) : { habits: [], tasks: [], events: [] };
+    
+    const itemId = Math.random().toString(36).substring(2, 9); // Generate a random ID
+    
+    // Create new item with proper ID and date
+    const newItem = {
+      ...values,
+      id: itemId,
+      date: values.startDate.toISOString(),
+      streak: 0,
+      completionDates: []
+    };
+    
+    // Add to the appropriate array based on item type
+    switch(values.itemType) {
+      case 'habit':
+        parsedData.habits = [...(parsedData.habits || []), newItem];
+        break;
+      case 'event':
+        parsedData.events = [...(parsedData.events || []), newItem];
+        break;
+      case 'task':
+        parsedData.tasks = [...(parsedData.tasks || []), newItem];
+        break;
+    }
+    
+    // Save back to localStorage
+    localStorage.setItem(`userData_${user.id}`, JSON.stringify(parsedData));
+    
+    let message = '';
     switch(values.itemType) {
       case 'habit':
         message = 'Habit created successfully!';
@@ -60,6 +93,7 @@ const AppContent: React.FC = () => {
       title: message,
       description: `${values.title} has been added to your schedule.`,
     });
+    
     setIsFormOpen(false);
   };
 
@@ -71,6 +105,11 @@ const AppContent: React.FC = () => {
     setFormType(type);
     setIsFormOpen(true);
   };
+
+  // If loading, show loading screen 
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
 
   // If not authenticated, don't render the Navbar or HabitForm
   if (!isAuthenticated) {
