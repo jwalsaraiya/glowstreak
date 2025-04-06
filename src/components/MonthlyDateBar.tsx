@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   format, 
@@ -176,7 +175,7 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
                   key={`day-${weekIdx}-${dayIdx}`}
                   onClick={() => onDateSelect(day)}
                   className={cn(
-                    "flex flex-col items-center p-1 rounded-md cursor-pointer transition-colors min-h-[80px]",
+                    "flex flex-col items-center p-1 rounded-md cursor-pointer transition-colors min-h-[85px]",
                     isSelected ? "bg-primary text-primary-foreground" : 
                     isCurrentDay ? "bg-muted" : "hover:bg-accent/50"
                   )}
@@ -188,16 +187,15 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
                     {day.getDate()}
                   </span>
                   
-                  {/* Show high priority events */}
+                  {/* Show high priority events with improved readability */}
                   {highPriorityEvents.length > 0 && (
                     <div className="flex flex-col w-full mt-1 gap-1 text-left">
                       {highPriorityEvents.slice(0, 2).map((event, idx) => (
                         <div 
                           key={idx}
                           className={cn(
-                            "text-[8px] truncate px-1 rounded",
+                            "text-[10px] truncate px-1 py-0.5 rounded",
                             isSelected ? "text-primary-foreground/90" : "text-foreground",
-                            event.type === 'habit' ? "bg-primary/10 border-l border-primary" : 
                             event.type === 'event' ? "bg-blue-400/10 border-l border-blue-400" : 
                             "bg-yellow-400/10 border-l border-yellow-400",
                             event.isCompleted && "line-through opacity-70"
@@ -208,7 +206,7 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
                         </div>
                       ))}
                       {highPriorityEvents.length > 2 && (
-                        <span className="text-[8px] text-muted-foreground text-center">
+                        <span className="text-[9px] text-muted-foreground text-center">
                           +{highPriorityEvents.length - 2} more
                         </span>
                       )}

@@ -164,6 +164,11 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
     ...processedHabits
   ];
 
+  // High priority items for calendar view (only tasks and events, not habits)
+  const highPriorityItems = calendarItems.filter(item => 
+    item.priority === 'high' && item.type !== 'habit'
+  );
+
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setViewDate(date);
@@ -239,6 +244,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                     Category: {item.category}
                   </span>
                 )}
+                <span className="text-xs text-muted-foreground block mt-1">
+                  Priority: {item.priority || 'medium'}
+                </span>
               </div>
             ))
           ) : (
@@ -288,7 +296,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
               selectedDate={selectedDate}
               onDateSelect={handleDateSelect}
               firstDayOfWeek={settings.firstDayOfWeek}
-              events={calendarItems}
+              events={highPriorityItems}
             />
             {renderSelectedDateItems()}
           </div>

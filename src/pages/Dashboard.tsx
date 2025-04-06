@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { format, isSameDay, isBefore } from 'date-fns';
+import { format, isSameDay, isBefore, differenceInDays, differenceInCalendarDays, addDays } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
 import WeeklyDateBar from '@/components/WeeklyDateBar';
 import { Button } from '@/components/ui/button';
@@ -98,6 +99,48 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [habits, events, tasks, user]);
 
+  // Function to calculate streaks correctly
+  const calculateStreak = (completionDates: string[], itemType: string) => {
+    if (itemType !== 'habit') return 0;
+    
+    if (!completionDates || completionDates.length === 0) return 0;
+    
+    // Sort dates in ascending order
+    const sortedDates = [...completionDates].map(d => new Date(d)).sort((a, b) => a.getTime() - b.getTime());
+    
+    // Get the most recent completion date
+    const mostRecentDate = new Date(sortedDates[sortedDates.length - 1]);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // If the most recent completion is not yesterday or today, streak is broken
+    const daysSinceLastCompletion = differenceInCalendarDays(today, mostRecentDate);
+    if (daysSinceLastCompletion > 1) return 0;
+    
+    // Count consecutive days
+    let streak = 1; // Start with 1 for the most recent day
+    let currentDate = mostRecentDate;
+    
+    for (let i = sortedDates.length - 2; i >= 0; i--) {
+      const previousDate = new Date(sortedDates[i]);
+      const daysBetween = differenceInCalendarDays(currentDate, previousDate);
+      
+      if (daysBetween === 1) {
+        // Consecutive day
+        streak++;
+        currentDate = previousDate;
+      } else if (daysBetween === 0) {
+        // Same day (duplicate), skip
+        continue;
+      } else {
+        // Non-consecutive day, break the count
+        break;
+      }
+    }
+    
+    return streak;
+  };
+
   const filterItems = (items: any[], selectedDate: Date, itemType: 'habit' | 'event' | 'task') => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -115,16 +158,24 @@ const Dashboard: React.FC<DashboardProps> = ({
         itemStartDate.setHours(0, 0, 0, 0);
         return !isBefore(selectedDate, itemStartDate);
       })
-      .map(item => ({ 
-        ...item, 
-        itemType,
-        isCompleted: itemType === 'habit' 
+      .map(item => {
+        const isCompleted = itemType === 'habit' 
           ? item.completionDates?.some((dateStr: string) => 
               isSameDay(new Date(dateStr), selectedDate)
             ) || false
-          : item.isCompleted || false,
-        isLocked: isBefore(today, selectedDate)
-      }));
+          : item.isCompleted || false;
+          
+        // Calculate streak correctly for habits
+        const streak = calculateStreak(item.completionDates, itemType);
+          
+        return { 
+          ...item, 
+          itemType,
+          isCompleted,
+          isLocked: isBefore(today, selectedDate),
+          streak: streak
+        };
+      });
   };
   
   const filteredHabits = filterItems(habits, selectedDate, 'habit');
@@ -223,7 +274,8 @@ const Dashboard: React.FC<DashboardProps> = ({
             <h3 className="text-xl font-semibold">{title}</h3>
             <Button 
               variant="ghost" 
-              size="sm" 
+              size="sm"
+              className="bg-gray-100 hover:bg-gray-200"
               onClick={() => {
                 if (itemType === 'habit') onAddHabit();
                 if (itemType === 'event') onAddEvent();
@@ -247,7 +299,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           <h3 className="text-xl font-semibold">{title}</h3>
           <Button 
             variant="ghost" 
-            size="sm" 
+            size="sm"
+            className="bg-gray-100 hover:bg-gray-200"
             onClick={() => {
               if (itemType === 'habit') onAddHabit();
               if (itemType === 'event') onAddEvent();
@@ -264,10 +317,10 @@ const Dashboard: React.FC<DashboardProps> = ({
               title={item.title}
               description={item.description}
               category={item.category}
-              streak={item.streak || 0}
+              streak={itemType === 'habit' ? item.streak : 0}
               priority={item.priority || 'medium'}
               isCompleted={item.isCompleted}
-              isOneTime={item.recurrence === 'none'}
+              isOneTime={item.recurrence === 'none' || itemType !== 'habit'}
               disabled={item.isLocked}
               onClick={() => toggleItemCompletion(item.id, itemType)}
               onDelete={() => confirmDelete(item.id, itemType)}
