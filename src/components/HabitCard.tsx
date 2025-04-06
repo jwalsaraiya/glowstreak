@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Trash2, CheckCircle2, Circle, Flame, Calendar, Clock } from 'lucide-react';
+import { Trash2, CheckCircle2, Circle, Flame, Calendar, Clock, Flag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,19 @@ const HabitCard: React.FC<HabitCardProps> = ({
         return 'border-l-4 border-green-400';
       default:
         return 'border-l-4 border-yellow-400';
+    }
+  };
+
+  const getPriorityIcon = () => {
+    switch (priority) {
+      case 'high':
+        return <Flag className="h-3 w-3 text-destructive" />;
+      case 'medium':
+        return <Flag className="h-3 w-3 text-yellow-400" />;
+      case 'low':
+        return <Flag className="h-3 w-3 text-green-400" />;
+      default:
+        return <Flag className="h-3 w-3 text-yellow-400" />;
     }
   };
 
@@ -117,7 +130,10 @@ const HabitCard: React.FC<HabitCardProps> = ({
                 Streak: {streak}
               </>
             ) : (
-              <>Priority: {priority}</>
+              <>
+                {getPriorityIcon()}
+                {priority}
+              </>
             )}
           </Badge>
         )}

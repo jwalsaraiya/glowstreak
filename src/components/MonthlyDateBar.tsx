@@ -41,7 +41,6 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
   const [currentMonthDate, setCurrentMonthDate] = useState(startOfMonth(selectedDate));
   
   useEffect(() => {
-    // Update month if selected date changes to a different month
     const selectedMonthStart = startOfMonth(selectedDate);
     if (!isSameDay(selectedMonthStart, currentMonthDate)) {
       setCurrentMonthDate(selectedMonthStart);
@@ -55,11 +54,9 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
     
     setCurrentMonthDate(newMonthDate);
     
-    // When navigating months, keep the same day of month if possible
     const newDate = new Date(selectedDate);
     newDate.setFullYear(newMonthDate.getFullYear(), newMonthDate.getMonth(), selectedDate.getDate());
     
-    // Handle cases where the day doesn't exist in the new month (e.g., Feb 30)
     const lastDayOfNewMonth = endOfMonth(newMonthDate).getDate();
     if (selectedDate.getDate() > lastDayOfNewMonth) {
       newDate.setDate(lastDayOfNewMonth);
@@ -68,13 +65,11 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
     onDateSelect(newDate);
   };
   
-  // Generate all days in the current month
   const monthDays = eachDayOfInterval({
     start: currentMonthDate,
     end: endOfMonth(currentMonthDate)
   });
 
-  // Get days of week header based on first day setting
   const getDaysOfWeek = () => {
     const days = firstDayOfWeek === "monday" 
       ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -83,29 +78,24 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
     return days;
   };
 
-  // Organize days into weeks for grid display
   const organizeDaysIntoWeeks = () => {
     const firstDay = currentMonthDate.getDay();
     const adjustedFirstDay = (firstDay - (weekStartsOn === 1 ? 1 : 0) + 7) % 7;
     
     const daysWithEmptySpaces = [];
     
-    // Add empty spaces for days before the 1st of the month
     for (let i = 0; i < adjustedFirstDay; i++) {
       daysWithEmptySpaces.push(null);
     }
     
-    // Add all days of the month
     monthDays.forEach(day => {
       daysWithEmptySpaces.push(day);
     });
     
-    // Make sure we have complete weeks (rows of 7)
     while (daysWithEmptySpaces.length % 7 !== 0) {
       daysWithEmptySpaces.push(null);
     }
     
-    // Split into weeks
     const weeks = [];
     for (let i = 0; i < daysWithEmptySpaces.length; i += 7) {
       weeks.push(daysWithEmptySpaces.slice(i, i + 7));
@@ -114,11 +104,16 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
     return weeks;
   };
 
-  // Get high priority events for a specific day
-  const getHighPriorityEventsForDay = (day: Date) => {
+  const getEventsForDay = (day: Date) => {
     return events.filter(event => {
       const eventDate = new Date(event.date);
-      return isSameDay(eventDate, day) && event.priority === 'high';
+      return isSameDay(eventDate, day);
+    }).sort((a, b) => {
+      if (a.priority === 'high' && b.priority !== 'high') return -1;
+      if (a.priority !== 'high' && b.priority === 'high') return 1;
+      if (a.type === 'event' && b.type !== 'event') return -1;
+      if (a.type !== 'event' && b.type === 'event') return 1;
+      return 0;
     });
   };
 
@@ -168,14 +163,14 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
               const isCurrentDay = isToday(day);
               const isSelected = isSameDay(day, selectedDate);
               const isInFuture = isBefore(new Date(), day);
-              const highPriorityEvents = getHighPriorityEventsForDay(day);
+              const dayEvents = getEventsForDay(day);
               
               return (
                 <div 
                   key={`day-${weekIdx}-${dayIdx}`}
                   onClick={() => onDateSelect(day)}
                   className={cn(
-                    "flex flex-col items-center p-1 rounded-md cursor-pointer transition-colors min-h-[85px]",
+                    "flex flex-col items-center p-1 rounded-md cursor-pointer transition-colors min-h-[90px]",
                     isSelected ? "bg-primary text-primary-foreground" : 
                     isCurrentDay ? "bg-muted" : "hover:bg-accent/50"
                   )}
@@ -187,17 +182,18 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
                     {day.getDate()}
                   </span>
                   
-                  {/* Show high priority events with improved readability */}
-                  {highPriorityEvents.length > 0 && (
+                  {dayEvents.length > 0 && (
                     <div className="flex flex-col w-full mt-1 gap-1 text-left">
-                      {highPriorityEvents.slice(0, 2).map((event, idx) => (
+                      {dayEvents.slice(0, 3).map((event, idx) => (
                         <div 
                           key={idx}
                           className={cn(
-                            "text-[10px] truncate px-1 py-0.5 rounded",
+                            "text-xs truncate px-1 py-1 rounded",
                             isSelected ? "text-primary-foreground/90" : "text-foreground",
                             event.type === 'event' ? "bg-blue-400/10 border-l border-blue-400" : 
-                            "bg-yellow-400/10 border-l border-yellow-400",
+                            event.type === 'task' && event.priority === 'high' ? "bg-destructive/10 border-l border-destructive" :
+                            event.type === 'task' ? "bg-yellow-400/10 border-l border-yellow-400" :
+                            "bg-primary/10 border-l border-primary",
                             event.isCompleted && "line-through opacity-70"
                           )}
                           title={event.title}
@@ -205,9 +201,9 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
                           {event.title}
                         </div>
                       ))}
-                      {highPriorityEvents.length > 2 && (
-                        <span className="text-[9px] text-muted-foreground text-center">
-                          +{highPriorityEvents.length - 2} more
+                      {dayEvents.length > 3 && (
+                        <span className="text-[10px] text-muted-foreground text-center">
+                          +{dayEvents.length - 3} more
                         </span>
                       )}
                     </div>

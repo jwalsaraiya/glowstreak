@@ -77,8 +77,8 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
       )}
       
       <div className={sidebarClasses}>
-        <div className="space-y-4">
-          <div className="flex items-center mb-6 justify-center md:justify-start">
+        <div className="space-y-6">
+          <div className="flex items-center mb-8 justify-center md:justify-start">
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">GS</span>
@@ -87,7 +87,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
             </div>
           </div>
 
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-3">
             <Button
               onClick={() => {
                 onCreateHabit();
@@ -124,7 +124,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
             </Button>
           </div>
 
-          <div className="space-y-1 mt-6">
+          <div className="space-y-3 mt-8">
             <NavItem
               icon={Home}
               label="Dashboard"
@@ -153,7 +153,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-1">
+          <div className="space-y-3">
             <NavItem
               icon={Settings}
               label="Settings"

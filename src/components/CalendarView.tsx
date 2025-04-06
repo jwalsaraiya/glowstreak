@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +27,7 @@ interface CalendarEvent {
   id: string;
   isCompleted?: boolean;
   startDate?: Date; // Used for recurrence and filtering
+  priority?: string;
 }
 
 interface CalendarViewProps {
@@ -53,7 +53,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   const [viewDate, setViewDate] = useState<Date>(propSelectedDate || today);
   const weekStartsOn = firstDayOfWeek === "monday" ? 1 : 0;
 
-  // Handle date selection
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
@@ -61,19 +60,16 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     }
   };
 
-  // Handle event click
   const handleEventClick = (eventId: string) => {
     if (onEventClick) onEventClick(eventId);
   };
 
-  // Navigate through months
   const changeMonth = (direction: 'prev' | 'next') => {
     setViewDate(prevDate => 
       direction === 'prev' ? subMonths(prevDate, 1) : addMonths(prevDate, 1)
     );
   };
 
-  // Get days of week header based on first day setting
   const getDaysOfWeek = () => {
     const days = firstDayOfWeek === "monday" 
       ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -82,7 +78,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     return days;
   };
 
-  // Get events for a specific date and filter out events that shouldn't be shown yet
   const getEventsForDate = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -92,7 +87,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       const startDate = event.startDate ? new Date(event.startDate) : eventDate;
       startDate.setHours(0, 0, 0, 0);
       
-      // Don't show events before their start date
       if (isBefore(date, startDate)) {
         return false;
       }
@@ -101,7 +95,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     });
   };
 
-  // Determine if an event should be locked (can't be completed)
   const isEventLocked = (event: CalendarEvent) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -109,11 +102,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     const eventDate = new Date(event.date);
     eventDate.setHours(0, 0, 0, 0);
     
-    // Events in the future should be locked
     return isBefore(today, eventDate);
   };
 
-  // Organize days into weeks for grid display
   const organizeDaysIntoWeeks = () => {
     const monthStart = startOfMonth(viewDate);
     const monthEnd = endOfMonth(viewDate);
@@ -124,22 +115,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     
     const daysWithEmptySpaces = [];
     
-    // Add empty spaces for days before the 1st of the month
     for (let i = 0; i < adjustedFirstDay; i++) {
       daysWithEmptySpaces.push(null);
     }
     
-    // Add all days of the month
     monthDays.forEach(day => {
       daysWithEmptySpaces.push(day);
     });
     
-    // Make sure we have complete weeks (rows of 7)
     while (daysWithEmptySpaces.length % 7 !== 0) {
       daysWithEmptySpaces.push(null);
     }
     
-    // Split into weeks
     const weeks = [];
     for (let i = 0; i < daysWithEmptySpaces.length; i += 7) {
       weeks.push(daysWithEmptySpaces.slice(i, i + 7));
@@ -148,8 +135,24 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     return weeks;
   };
 
+  const sortEvents = (events: CalendarEvent[]) => {
+    return [...events].sort((a, b) => {
+      if (a.priority === 'high' && b.priority !== 'high') return -1;
+      if (a.priority !== 'high' && b.priority === 'high') return 1;
+      
+      if (a.type === 'event' && b.type !== 'event') return -1;
+      if (a.type !== 'event' && b.type === 'event') return 1;
+      if (a.type === 'task' && b.type === 'habit') return -1;
+      if (a.type === 'habit' && b.type === 'task') return 1;
+      
+      return 0;
+    });
+  };
+
   const weeks = organizeDaysIntoWeeks();
   const daysOfWeek = getDaysOfWeek();
+  
+  const selectedDateEvents = sortEvents(getEventsForDate(selectedDate));
 
   return (
     <Card className="h-full border shadow-none">
@@ -227,14 +230,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                         {date.getDate()}
                       </div>
                       <div className="flex flex-col gap-1 max-h-[80px] overflow-y-auto">
-                        {dateEvents.map((event, idx) => (
+                        {dateEvents.slice(0, 3).map((event, idx) => (
                           <Badge 
                             key={idx}
                             variant={event.type === 'event' ? 'secondary' : 'outline'}
                             className={cn(
-                              "truncate text-xs py-0.5 cursor-pointer",
+                              "truncate text-xs py-1 cursor-pointer",
                               event.isCompleted ? "opacity-70 line-through" : "",
-                              isEventLocked(event) ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90"
+                              isEventLocked(event) ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90",
+                              event.priority === 'high' ? "border-l-2 border-destructive" : "",
+                              event.type === 'task' ? "border-l-2 border-yellow-400" : "",
+                              event.type === 'habit' ? "border-l-2 border-primary" : "",
+                              event.type === 'event' ? "border-l-2 border-blue-400" : ""
                             )}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -246,6 +253,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                             {event.title}
                           </Badge>
                         ))}
+                        {dateEvents.length > 3 && (
+                          <span className="text-[9px] text-muted-foreground text-center">
+                            +{dateEvents.length - 3} more
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
@@ -254,19 +266,19 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             ))}
           </div>
 
-          {/* Selected date events */}
           <div className="border-t mt-4 pt-4 px-4 pb-4">
             <h3 className="text-lg font-semibold mb-3">
               {format(selectedDate, 'MMMM d, yyyy')}
             </h3>
             <div className="space-y-2">
-              {getEventsForDate(selectedDate).length > 0 ? (
-                getEventsForDate(selectedDate).map((event) => (
+              {selectedDateEvents.length > 0 ? (
+                selectedDateEvents.map((event) => (
                   <div
                     key={event.id}
                     className={cn(
                       "p-3 rounded-md",
                       event.type === 'event' ? "bg-secondary border-l-2 border-blue-400" : 
+                      event.type === 'task' && event.priority === 'high' ? "bg-destructive/10 border-l-2 border-destructive" :
                       event.type === 'task' ? "bg-yellow-100 border-l-2 border-yellow-400" : 
                       "bg-primary/10 border-l-2 border-primary",
                       event.isCompleted ? 'line-through opacity-70' : '',
@@ -280,7 +292,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                   >
                     <div className="flex justify-between items-center">
                       <span className="font-medium">{event.title}</span>
-                      <Badge variant="outline">{event.type}</Badge>
+                      <div className="flex gap-1">
+                        {event.priority === 'high' && (
+                          <Badge variant="destructive">High</Badge>
+                        )}
+                        <Badge variant="outline">{event.type}</Badge>
+                      </div>
                     </div>
                   </div>
                 ))

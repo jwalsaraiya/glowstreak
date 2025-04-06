@@ -134,6 +134,15 @@
   main {
     @apply pt-16;
   }
+  
+  /* Ensure settings tabs wrap properly on small screens */
+  .tabs-list {
+    @apply flex-wrap gap-1;
+  }
+  
+  .tabs-trigger {
+    @apply min-w-[100px] flex-1;
+  }
 }
 
 @media (min-width: 641px) and (max-width: 768px) {
@@ -273,12 +282,12 @@
 
 /* Sidebar spacing */
 .sidebar-menu [data-item] {
-  @apply my-1.5;
+  @apply my-2; /* Increased vertical spacing for sidebar menu items */
 }
 
 /* Solid navbar in settings */
 .settings-navbar {
-  @apply bg-card border-r min-w-max h-full overflow-visible whitespace-nowrap;
+  @apply bg-card border-r min-w-max h-full whitespace-nowrap;
 }
 
 .settings-navbar a {
@@ -296,6 +305,6 @@
 
 @media (max-width: 768px) {
   .completion-trend-inner {
-    @apply min-w-[768px];
+    @apply min-w-[600px];
   }
 }

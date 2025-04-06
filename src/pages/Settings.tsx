@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -89,7 +88,6 @@ const Settings = () => {
     setSettings(prev => {
       const newSettings = { ...prev, [key]: value };
       
-      // Show toast notification
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved.",
@@ -114,12 +112,12 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="appearance" className="space-y-6">
-        <div className="bg-card rounded-lg p-2 mb-4 overflow-auto">
-          <TabsList className="flex w-full h-auto">
-            <TabsTrigger value="appearance" className="px-4 py-2 flex-1">Appearance</TabsTrigger>
-            <TabsTrigger value="notifications" className="px-4 py-2 flex-1">Notifications</TabsTrigger>
-            <TabsTrigger value="account" className="px-4 py-2 flex-1">Account</TabsTrigger>
-            <TabsTrigger value="habits" className="px-4 py-2 flex-1">Habits</TabsTrigger>
+        <div className="bg-card rounded-lg p-2 mb-4">
+          <TabsList className="flex w-full h-auto flex-wrap">
+            <TabsTrigger value="appearance" className="px-4 py-2 flex-1 min-w-[120px]">Appearance</TabsTrigger>
+            <TabsTrigger value="notifications" className="px-4 py-2 flex-1 min-w-[120px]">Notifications</TabsTrigger>
+            <TabsTrigger value="account" className="px-4 py-2 flex-1 min-w-[120px]">Account</TabsTrigger>
+            <TabsTrigger value="habits" className="px-4 py-2 flex-1 min-w-[120px]">Habits</TabsTrigger>
           </TabsList>
         </div>
 
