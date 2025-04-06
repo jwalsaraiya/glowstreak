@@ -7,7 +7,7 @@ import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, is
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, CalendarCheck, CalendarClock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CalendarPageProps {
   selectedDate: Date;
@@ -307,7 +307,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                 className="gap-1" 
                 onClick={onCreateEvent}
               >
-                <Calendar className="h-4 w-4" />
+                <CalendarClock className="h-4 w-4" />
                 <span className="inline text-sm md:text-base">New Event</span>
               </Button>
               <Button 
