@@ -1,11 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, CalendarCheck, CalendarClock } from 'lucide-react';
+import { 
+  format, 
+  addDays, 
+  subDays, 
+  startOfWeek, 
+  endOfWeek, 
+  eachDayOfInterval, 
+  isSameDay,
+  addWeeks,
+  addMonths,
+  addYears,
+  isAfter,
+  isBefore
+} from 'date-fns';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -35,7 +46,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   onCreateOneTime,
   onCreateEvent
 }) => {
-  const [view, setView] = useState<'week' | 'month'>('month');
   const [viewDate, setViewDate] = useState<Date>(selectedDate);
   const [habits, setHabits] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
@@ -71,38 +81,88 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
     return () => clearInterval(interval);
   }, [user]);
 
-  // Only include events and tasks for calendar
+  // Process recurrence for all items
+  const processRecurrence = (items: any[], itemType: 'event' | 'task' | 'habit') => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const futureDate = addMonths(today, 3); // Process up to 3 months ahead
+    
+    const processedItems: any[] = [];
+    
+    items.forEach(item => {
+      // Add the original item with its start date for reference
+      const originalDate = new Date(item.date || item.startDate);
+      const startDate = new Date(item.date || item.startDate);
+      
+      // Skip if it hasn't started yet
+      if (!item.recurrence || item.recurrence === 'none') {
+        processedItems.push({
+          ...item,
+          date: originalDate,
+          startDate: startDate,
+          type: itemType
+        });
+        return;
+      }
+      
+      // For habits without one-time completion, generate recurring instances
+      let currentDate = new Date(startDate);
+      
+      while (currentDate <= futureDate) {
+        // Only add if the date is valid
+        if (currentDate >= startDate) {
+          processedItems.push({
+            ...item,
+            date: new Date(currentDate),
+            startDate: startDate, // Keep original start date for reference
+            type: itemType,
+            // Check if the habit is completed on this day
+            isCompleted: itemType === 'habit' ? 
+              item.completionDates?.some((d: string) => isSameDay(new Date(d), currentDate)) : 
+              item.isCompleted
+          });
+        }
+        
+        // Calculate next occurrence based on recurrence type
+        switch (item.recurrence) {
+          case 'daily':
+            currentDate = addDays(currentDate, 1);
+            break;
+          case 'weekly':
+            currentDate = addWeeks(currentDate, 1);
+            break;
+          case 'monthly':
+            currentDate = addMonths(currentDate, 1);
+            break;
+          case 'yearly':
+            currentDate = addYears(currentDate, 1);
+            break;
+          default:
+            // For none or unspecified, don't create recurrences
+            currentDate = addYears(futureDate, 1); // Exit the loop
+        }
+      }
+    });
+    
+    return processedItems;
+  };
+
+  // Process all items with recurrence
+  const processedEvents = processRecurrence(events, 'event');
+  const processedTasks = processRecurrence(tasks, 'task');
+  const processedHabits = processRecurrence(habits, 'habit');
+
+  // All calendar items
   const calendarItems = [
-    ...events.map(event => ({
-      date: new Date(event.date),
-      type: 'event' as const,
-      title: event.title,
-      id: `event-${event.id}`,
-      isCompleted: event.isCompleted,
-      priority: event.priority,
-      category: event.category,
-    })),
-    ...tasks.map(task => ({
-      date: new Date(task.date),
-      type: 'task' as const,
-      title: task.title,
-      id: `task-${task.id}`,
-      isCompleted: task.isCompleted,
-      priority: task.priority,
-      category: task.category,
-    }))
+    ...processedEvents,
+    ...processedTasks,
+    ...processedHabits
   ];
 
   const navigateDate = (direction: 'prev' | 'next') => {
-    let newDate: Date;
-    
-    if (view === 'week') {
-      newDate = direction === 'prev' ? subDays(viewDate, 7) : addDays(viewDate, 7);
-    } else {
-      newDate = direction === 'prev' ? subDays(viewDate, 30) : addDays(viewDate, 30);
-    }
-    
-    setViewDate(newDate);
+    setViewDate(prevDate => 
+      direction === 'prev' ? subDays(prevDate, 7) : addDays(prevDate, 7)
+    );
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -122,55 +182,118 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   const weekEnd = endOfWeek(viewDate, { weekStartsOn: settings.firstDayOfWeek === "monday" ? 1 : 0 });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
+  // Check if an item should be shown for a specific day
   const itemsForDay = (day: Date) => {
-    return calendarItems.filter(item => 
-      isSameDay(item.date, day)
-    );
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    return calendarItems.filter(item => {
+      const itemDate = new Date(item.date);
+      const startDate = item.startDate ? new Date(item.startDate) : itemDate;
+      startDate.setHours(0, 0, 0, 0);
+      
+      // Only show items that have started already
+      if (isBefore(day, startDate)) {
+        return false;
+      }
+      
+      return isSameDay(itemDate, day);
+    });
   };
 
+  // Determine if an item should be locked (future date)
+  const isItemLocked = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return isAfter(date, today);
+  };
+
+  // Get item type styling
   const getItemTypeColor = (type: string, priority: string = 'medium') => {
     if (type === 'event') {
       return 'bg-secondary border-l-2 border-blue-400';
-    } else {
+    } else if (type === 'task') {
       if (priority === 'high') {
         return 'bg-destructive/10 border-l-2 border-destructive';
       } else {
         return 'bg-yellow-100 border-l-2 border-yellow-400';
       }
+    } else {
+      return 'bg-primary/10 border-l-2 border-primary';
     }
   };
 
-  const renderMonthView = () => (
-    <div className="space-y-4">
-      <CalendarComponent
-        mode="single"
-        selected={selectedDate}
-        onSelect={handleDateSelect}
-        className="rounded-md border"
-        modifiers={{
-          booked: calendarItems.map(item => item.date),
-        }}
-        modifiersStyles={{
-          booked: {
-            fontWeight: "bold",
-            backgroundColor: "hsl(var(--primary) / 0.1)",
-            color: "hsl(var(--primary))",
-            borderRadius: "0.5rem",
-          }
-        }}
-      />
+  const renderWeekView = () => {
+    const weekDays = settings.firstDayOfWeek === "monday" 
+      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-      <div className="mt-6">
+    return (
+      <div>
+        <div className="p-4 grid grid-cols-7 gap-1 text-center text-xs sm:text-sm font-medium">
+          {weekDays.map(day => (
+            <div key={day}>{day}</div>
+          ))}
+        </div>
+        <div className="px-4 pb-4 grid grid-cols-7 gap-1 text-center">
+          {daysInWeek.map((date, i) => {
+            const dayEvents = itemsForDay(date);
+            const isToday = isSameDay(date, new Date());
+            const isSelected = isSameDay(date, selectedDate);
+            const locked = isItemLocked(date);
+
+            return (
+              <div 
+                key={i} 
+                className="flex flex-col"
+                onClick={() => handleDateSelect(date)}
+              >
+                <div className={`mb-1 h-8 w-8 rounded-full flex items-center justify-center mx-auto cursor-pointer transition-colors ${
+                  isSelected ? 'bg-primary text-primary-foreground' : 
+                  isToday ? 'bg-muted text-foreground' : ''
+                }`}>
+                  {date.getDate()}
+                </div>
+                <div className="flex flex-col gap-1 max-h-[120px] overflow-y-auto">
+                  {dayEvents.map((event, idx) => (
+                    <Badge 
+                      key={idx}
+                      variant={event.type === 'event' ? 'secondary' : 'outline'}
+                      className={`truncate text-xs py-0.5 ${
+                        event.isCompleted ? "opacity-70 line-through" : 
+                        locked ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-primary/90"
+                      }`}
+                    >
+                      {event.title}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Display details for selected date
+  const renderSelectedDateItems = () => {
+    const items = itemsForDay(selectedDate);
+    const locked = isItemLocked(selectedDate);
+
+    return (
+      <div className="mt-6 px-4">
         <h3 className="text-lg font-semibold mb-3">
           Items for {format(selectedDate, 'MMMM d, yyyy')}
         </h3>
         <div className="space-y-2">
-          {itemsForDay(selectedDate).length > 0 ? (
-            itemsForDay(selectedDate).map((item) => (
+          {items.length > 0 ? (
+            items.map((item) => (
               <div
                 key={item.id}
                 className={`p-3 rounded-md ${getItemTypeColor(item.type, item.priority)} ${
-                  item.isCompleted ? 'line-through opacity-70' : ''
+                  item.isCompleted ? 'line-through opacity-70' : 
+                  locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                 }`}
               >
                 <div className="flex justify-between items-center">
@@ -192,58 +315,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
           )}
         </div>
       </div>
-    </div>
-  );
-
-  const renderWeekView = () => {
-    const weekDays = settings.firstDayOfWeek === "monday" 
-      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    return (
-      <div>
-        <div className="p-4 grid grid-cols-7 gap-1 text-center text-xs sm:text-sm font-medium">
-          {weekDays.map(day => (
-            <div key={day}>{day}</div>
-          ))}
-        </div>
-        <div className="px-4 pb-4 grid grid-cols-7 gap-1 text-center">
-          {daysInWeek.map((date, i) => {
-            const dateStr = date.toDateString();
-            const dayEvents = itemsForDay(date);
-            const isToday = isSameDay(date, new Date());
-            const isSelected = isSameDay(date, selectedDate);
-
-            return (
-              <div 
-                key={i} 
-                className="flex flex-col"
-                onClick={() => handleDateSelect(date)}
-              >
-                <div className={`mb-1 h-8 w-8 rounded-full flex items-center justify-center mx-auto cursor-pointer transition-colors ${
-                  isSelected ? 'bg-primary text-primary-foreground' : 
-                  isToday ? 'bg-muted text-foreground' : ''
-                }`}>
-                  {date.getDate()}
-                </div>
-                <div className="flex flex-col gap-1 max-h-[120px] overflow-y-auto">
-                  {dayEvents.map((event, idx) => (
-                    <Badge 
-                      key={idx}
-                      variant={event.type === 'event' ? 'secondary' : 'outline'}
-                      className={`truncate text-xs py-0.5 cursor-pointer ${
-                        event.isCompleted ? "opacity-70 line-through" : "hover:bg-primary/90"
-                      }`}
-                    >
-                      {event.title}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     );
   };
 
@@ -263,8 +334,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
               <CalendarDays className="h-6 w-6" />
               <div>
                 <h2 className="text-xl font-semibold">
-                  {view === 'week' && format(viewDate, 'MMMM yyyy')}
-                  {view === 'month' && format(viewDate, 'MMMM yyyy')}
+                  {format(viewDate, 'MMMM yyyy')}
                 </h2>
               </div>
             </div>
@@ -293,23 +363,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <Tabs 
-              defaultValue={view} 
-              value={view} 
-              onValueChange={(value) => setView(value as 'week' | 'month')}
-              className="w-full max-w-xs"
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="month">Month</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
           <div className="mt-4 overflow-x-auto">
-            {view === 'week' && renderWeekView()}
-            {view === 'month' && renderMonthView()}
+            {renderWeekView()}
+            {renderSelectedDateItems()}
           </div>
         </CardContent>
       </Card>

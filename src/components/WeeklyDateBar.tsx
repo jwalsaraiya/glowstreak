@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -41,13 +42,15 @@ const WeeklyDateBar: React.FC<WeeklyDateBarProps> = ({
     const date = addDays(currentWeekStart, i);
     const isToday = isSameDay(date, new Date());
     const isSelected = isSameDay(date, selectedDate);
+    const isInFuture = date > new Date();
     
     return {
       date,
       dayOfWeek: format(date, 'E'),
       dayOfMonth: format(date, 'd'),
       isToday,
-      isSelected
+      isSelected,
+      isInFuture
     };
   });
 
@@ -89,7 +92,12 @@ const WeeklyDateBar: React.FC<WeeklyDateBarProps> = ({
             )}
           >
             <span className="text-xs font-medium">{day.dayOfWeek}</span>
-            <span className="text-lg font-bold mt-1">{day.dayOfMonth}</span>
+            <span className={cn(
+              "text-lg font-bold mt-1",
+              day.isInFuture ? "opacity-60" : ""
+            )}>
+              {day.dayOfMonth}
+            </span>
           </div>
         ))}
       </div>

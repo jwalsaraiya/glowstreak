@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -49,11 +49,12 @@ const AppContent: React.FC = () => {
     
     const itemId = Math.random().toString(36).substring(2, 9); // Generate a random ID
     
-    // Create new item with proper ID and date
+    // Create new item with proper ID and dates
     const newItem = {
       ...values,
       id: itemId,
       date: values.startDate.toISOString(),
+      startDate: values.startDate.toISOString(), // Store start date separately for recurrence checks
       streak: 0,
       completionDates: []
     };

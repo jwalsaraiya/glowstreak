@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,7 +53,7 @@ const formSchema = z.object({
   }),
   priority: z.enum(['low', 'medium', 'high']),
   startDate: z.date(),
-  recurrence: z.enum(['daily', 'weekly', 'monthly', 'custom', 'none']),
+  recurrence: z.enum(['daily', 'weekly', 'monthly', 'yearly', 'none']),
   estimatedMinutes: z.coerce.number().min(1).optional(),
   itemType: z.enum(['habit', 'event', 'task']),
 });
@@ -152,6 +153,30 @@ const HabitForm: React.FC<HabitFormProps> = ({
         return 'Add a task to your schedule.';
       default:
         return 'Fill in the details below.';
+    }
+  };
+
+  // Generate recurrence options based on item type
+  const getRecurrenceOptions = () => {
+    if (itemType === 'habit') {
+      return (
+        <>
+          <SelectItem value="daily">Daily</SelectItem>
+          <SelectItem value="weekly">Weekly</SelectItem>
+          <SelectItem value="monthly">Monthly</SelectItem>
+          <SelectItem value="yearly">Yearly</SelectItem>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <SelectItem value="none">One-time</SelectItem>
+          <SelectItem value="daily">Daily</SelectItem>
+          <SelectItem value="weekly">Weekly</SelectItem>
+          <SelectItem value="monthly">Monthly</SelectItem>
+          <SelectItem value="yearly">Yearly</SelectItem>
+        </>
+      );
     }
   };
 
@@ -324,11 +349,7 @@ const HabitForm: React.FC<HabitFormProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">One-time</SelectItem>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
+                        {getRecurrenceOptions()}
                       </SelectContent>
                     </Select>
                     <FormMessage />
