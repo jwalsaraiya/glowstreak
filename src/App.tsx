@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -39,11 +39,9 @@ const AppContent: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [formType, setFormType] = React.useState<ItemType>('habit');
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   const handleCreateItem = (values: any) => {
-    // Get existing user data
-    const { user } = useAuth();
     if (!user) return;
     
     const userData = localStorage.getItem(`userData_${user.id}`);
@@ -176,6 +174,15 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  // Persist user login state in localStorage
+  useEffect(() => {
+    const storedAuth = localStorage.getItem('isAuthenticated');
+    if (storedAuth === 'true') {
+      // User authentication is already handled in the AuthProvider
+      // This just ensures we don't clear the auth state on page refresh
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system">

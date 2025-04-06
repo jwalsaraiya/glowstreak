@@ -7,6 +7,7 @@ import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, is
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, CalendarCheck, CalendarClock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 interface CalendarPageProps {
   selectedDate: Date;
@@ -35,6 +36,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   const [events, setEvents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   const fetchUserData = () => {
     if (user) {
@@ -50,6 +52,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
 
   useEffect(() => {
     fetchUserData();
+    const interval = setInterval(fetchUserData, 2000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const allItems = [
@@ -231,7 +235,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   );
 
   return (
-    <div className="container mx-auto py-6 max-w-7xl">
+    <div className="container mx-auto py-6 max-w-7xl px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Calendar</h1>
         <p className="text-muted-foreground">
@@ -240,7 +244,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
       </div>
 
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4 md:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div className="flex items-center space-x-4">
               <CalendarDays className="h-6 w-6" />
@@ -276,7 +280,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <Tabs 
               defaultValue={view} 
               value={view} 
@@ -289,34 +293,34 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
               </TabsList>
             </Tabs>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full md:w-auto justify-between md:justify-end">
               <Button 
                 variant="outline"
                 className="gap-1" 
                 onClick={onCreateOneTime}
               >
-                <CalendarCheck className="h-4 w-4" />
-                <span className="hidden md:inline">+ New Task</span>
+                <Plus className="h-4 w-4" />
+                <span className="inline text-sm md:text-base">New Task</span>
               </Button>
               <Button 
                 variant="secondary"
                 className="gap-1" 
                 onClick={onCreateEvent}
               >
-                <CalendarClock className="h-4 w-4" />
-                <span className="hidden md:inline">+ New Event</span>
+                <Calendar className="h-4 w-4" />
+                <span className="inline text-sm md:text-base">New Event</span>
               </Button>
               <Button 
                 className="gap-1" 
                 onClick={onCreateHabit}
               >
                 <Plus className="h-4 w-4" />
-                <span className="hidden md:inline">+ New Habit</span>
+                <span className="inline text-sm md:text-base">New Habit</span>
               </Button>
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 overflow-x-auto">
             {view === 'day' && renderDayView()}
             {view === 'month' && renderMonthView()}
           </div>

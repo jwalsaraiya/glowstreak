@@ -69,6 +69,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   useEffect(() => {
     fetchUserData();
+    const interval = setInterval(fetchUserData, 2000);
+    return () => clearInterval(interval);
   }, [user]);
 
   useEffect(() => {
@@ -197,8 +199,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               onClick={onAddTask}
               className="gap-1"
             >
-              <CalendarCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">+ New Task</span>
+              <Plus className="h-4 w-4" />
+              <span className="inline">New Task</span>
             </Button>
             <Button
               size="sm"
@@ -207,7 +209,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               className="gap-1"
             >
               <CalendarClock className="h-4 w-4" />
-              <span className="hidden sm:inline">+ New Event</span>
+              <span className="inline">New Event</span>
             </Button>
             <Button
               size="sm"
@@ -215,7 +217,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               className="gap-1"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">+ New Habit</span>
+              <span className="inline">New Habit</span>
             </Button>
           </div>
         </div>
@@ -240,7 +242,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             onClick={onAddHabit}
           >
             <Plus className="h-6 w-6 text-muted-foreground mb-2" />
-            <span className="text-muted-foreground font-medium">+ New Habit</span>
+            <span className="text-muted-foreground font-medium">New Habit</span>
           </div>
         </div>
       </div>

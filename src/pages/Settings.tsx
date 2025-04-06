@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -109,11 +110,11 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="appearance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 overflow-auto md:overflow-visible max-w-full md:max-w-2xl">
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="habits">Habits</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 p-1 h-auto flex-wrap">
+          <TabsTrigger value="appearance" className="py-2">Appearance</TabsTrigger>
+          <TabsTrigger value="notifications" className="py-2">Notifications</TabsTrigger>
+          <TabsTrigger value="account" className="py-2">Account</TabsTrigger>
+          <TabsTrigger value="habits" className="py-2">Habits</TabsTrigger>
         </TabsList>
 
         <TabsContent value="appearance">
@@ -380,9 +381,9 @@ const Settings = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="auto-archive">Auto-archive completed one-time tasks</Label>
+                    <Label htmlFor="auto-archive">Auto-archive completed tasks</Label>
                     <p className="text-sm text-muted-foreground">
-                      Automatically archive one-time tasks after completion
+                      Automatically archive tasks after completion
                     </p>
                   </div>
                   <Switch 

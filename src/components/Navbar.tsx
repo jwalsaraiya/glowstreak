@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Bell, Calendar, Home, Menu, PieChart, Plus, Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -95,7 +96,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
               className="w-full gap-1 md:gap-2 bg-primary hover:bg-primary/90 px-2 md:px-4"
             >
               <Plus className="h-5 w-5" />
-              {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>+ New Habit</span>}
+              {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>New Habit</span>}
             </Button>
             
             <Button
@@ -107,7 +108,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
               className="w-full gap-1 md:gap-2 px-2 md:px-4"
             >
               <Plus className="h-5 w-5" />
-              {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>+ New Task</span>}
+              {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>New Task</span>}
             </Button>
             
             <Button
@@ -119,7 +120,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
               className="w-full gap-1 md:gap-2 px-2 md:px-4"
             >
               <Calendar className="h-5 w-5" />
-              {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>+ New Event</span>}
+              {(!isMobile || isOpen) && <span className={cn("md:inline", isOpen ? "inline" : "hidden")}>New Event</span>}
             </Button>
           </div>
 
@@ -163,15 +164,14 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
             />
           </div>
 
-          <div className="pt-4 border-t flex items-center justify-center md:justify-start">
+          <div className="pt-4 border-t flex items-center justify-start">
             <Avatar className="h-9 w-9 mr-2">
               <AvatarImage src="/placeholder.svg" />
               <AvatarFallback>{user?.username?.substring(0, 2) || 'US'}</AvatarFallback>
             </Avatar>
             {(!isMobile || isOpen) && (
-              <div className="text-sm md:block">
+              <div className="text-sm">
                 <div className="font-medium">{user?.username || 'User'}</div>
-                <div className="text-muted-foreground text-xs">{user?.email || 'user@example.com'}</div>
               </div>
             )}
           </div>
