@@ -1,11 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { 
+import {
   CheckCheck, Clock, Flame, TrendingUp, 
   ArrowRight, ArrowUp, Zap, PieChart, Calendar,
   ChevronLeft, ChevronRight
@@ -13,6 +11,13 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
+import StreakAnalytics from '@/components/StreakAnalytics';
+import { 
+  ChartContainer, 
+  ChartTooltip, 
+  ChartTooltipContent 
+} from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
   format, 
   subDays, 
@@ -42,7 +47,6 @@ const AnalyticsPage: React.FC = () => {
   const [settings, setSettings] = useState<{firstDayOfWeek: "sunday" | "monday"}>({ firstDayOfWeek: "sunday" });
   const [selectedYear, setSelectedYear] = useState<number>(getYear(new Date()));
 
-  // Fetch user's habits, events, and tasks data
   useEffect(() => {
     if (user) {
       const userData = localStorage.getItem(`userData_${user.id}`);
@@ -55,7 +59,6 @@ const AnalyticsPage: React.FC = () => {
         setEvents(parsedData.events || []);
         setTasks(parsedData.tasks || []);
         
-        // Set the first habit as selected by default if available
         if (habitsData.length > 0 && !selectedHabit) {
           setSelectedHabit(habitsData[0].id);
         }
@@ -70,7 +73,6 @@ const AnalyticsPage: React.FC = () => {
     }
   }, [user, selectedHabit]);
 
-  // Calculate statistics for each habit
   useEffect(() => {
     if (!habits.length) return;
 
@@ -81,24 +83,21 @@ const AnalyticsPage: React.FC = () => {
       const startDate = habit.startDate ? new Date(habit.startDate) : today;
       const daysToConsider = Math.max(1, differenceInDays(today, startDate) + 1);
       
-      // Count successful days (completions)
       const successDays = new Set();
       completionDates.forEach((dateStr: string) => {
         const dateObj = new Date(dateStr);
         successDays.add(format(dateObj, 'yyyy-MM-dd'));
       });
       
-      // Count the number of success and fail days
       const successCount = successDays.size;
       const failCount = daysToConsider - successCount;
       
-      // Calculate current streak
       let currentStreak = 0;
       if (successDays.has(format(today, 'yyyy-MM-dd'))) {
         currentStreak = 1;
         let checkDate = today;
         
-        for (let i = 1; i < 1000; i++) { // Limiting to prevent infinite loops
+        for (let i = 1; i < 1000; i++) {
           checkDate = subDays(checkDate, 1);
           if (successDays.has(format(checkDate, 'yyyy-MM-dd'))) {
             currentStreak++;
@@ -108,7 +107,6 @@ const AnalyticsPage: React.FC = () => {
         }
       }
       
-      // Calculate completions for different time periods
       const thisWeek = eachDayOfInterval({
         start: startOfWeek(today, { weekStartsOn }),
         end: today
@@ -136,10 +134,8 @@ const AnalyticsPage: React.FC = () => {
         successDays.has(format(day, 'yyyy-MM-dd'))
       ).length;
       
-      // Calculate completion rate
       const completionRate = Math.round((successCount / daysToConsider) * 100);
       
-      // Generate weekly trend data for all weeks in the selected year
       const weeklyTrendData = [];
       const yearStart = new Date(selectedYear, 0, 1);
       const yearEnd = new Date(selectedYear, 11, 31);
@@ -166,21 +162,18 @@ const AnalyticsPage: React.FC = () => {
           tooltip: `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`
         });
         
-        // Move to next week
         currentWeekStart = new Date(currentWeekStart);
         currentWeekStart.setDate(currentWeekStart.getDate() + 7);
       }
       
-      // Generate monthly trend data for all months in the selected year
       const monthlyTrendData = [];
       for (let i = 0; i < 12; i++) {
         const monthDate = new Date(selectedYear, i, 1);
         const monthStart = startOfMonth(monthDate);
         const monthEnd = endOfMonth(monthDate);
         
-        // If this month is current or future month in current year, adjust end date
         const effectiveEndDate = selectedYear === today.getFullYear() && i >= today.getMonth() 
-          ? (i === today.getMonth() ? today : monthStart) // If future month, just count the 1st day (will be 0%)
+          ? (i === today.getMonth() ? today : monthStart)
           : monthEnd;
         
         const monthDays = eachDayOfInterval({ 
@@ -202,7 +195,6 @@ const AnalyticsPage: React.FC = () => {
         });
       }
       
-      // Get longest streak
       let longestStreak = 0;
       const dateObjects = completionDates.map((d: string) => new Date(d))
         .sort((a: Date, b: Date) => a.getTime() - b.getTime());
@@ -214,19 +206,16 @@ const AnalyticsPage: React.FC = () => {
           const prevDate = dateObjects[i-1];
           const currDate = dateObjects[i];
           
-          // Check if dates are consecutive
           const diffDays = differenceInDays(currDate, prevDate);
           
           if (diffDays === 1) {
             currentStreakCount++;
           } else {
-            // Reset streak count if dates aren't consecutive
             longestStreak = Math.max(longestStreak, currentStreakCount);
             currentStreakCount = 1;
           }
         }
         
-        // Check final streak
         longestStreak = Math.max(longestStreak, currentStreakCount);
       }
       
@@ -251,7 +240,6 @@ const AnalyticsPage: React.FC = () => {
     setHabitStats(statsArray);
   }, [habits, selectedYear, settings.firstDayOfWeek]);
 
-  // Get the currently selected habit stats
   const getSelectedHabitStats = () => {
     if (!selectedHabit || !habitStats.length) return null;
     return habitStats.find(stat => stat.id === selectedHabit) || habitStats[0];
@@ -446,6 +434,19 @@ const AnalyticsPage: React.FC = () => {
             </Card>
           </div>
 
+          {habitStats.length > 0 && (
+            <div className="mb-8">
+              <StreakAnalytics
+                streaks={habitStats.map(stat => ({
+                  name: stat.name,
+                  currentStreak: stat.currentStreak,
+                  longestStreak: stat.longestStreak,
+                  completion: stat.completionRate
+                }))}
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -490,38 +491,54 @@ const AnalyticsPage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-80 overflow-x-auto relative">
-                  <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-                  <div className="absolute inset-y-0 right-0 w-4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-                  
+                <div className="h-80 overflow-x-auto">
                   <div className={`${range === 'weekly' ? 'min-w-[1200px]' : 'min-w-[700px]'} h-full`}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ChartContainer 
+                      className="mt-4"
+                      config={{
+                        primary: {
+                          color: "#9b87f5" 
+                        }
+                      }}
+                    >
                       <BarChart
                         data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                        barSize={range === 'weekly' ? 15 : 30}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
+                        barSize={range === 'weekly' ? 25 : 40}
                       >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="name" />
-                        <YAxis unit="%" domain={[0, 100]} />
-                        <Tooltip
-                          formatter={(value) => [`${value}%`, 'Completion Rate']}
-                          contentStyle={{ borderRadius: '0.5rem' }}
-                          labelFormatter={(label) => {
-                            const item = (range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData)
-                              .find((item: any) => item.name === label);
-                            return range === 'weekly' 
-                              ? item?.tooltip || label 
-                              : `${label}: ${item?.completedDays || 0}/${item?.totalDays || 0} days`;
-                          }}
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                        <XAxis 
+                          dataKey="name" 
+                          tick={{ fontSize: 12 }} 
+                          tickMargin={10}
+                          padding={{ left: 10, right: 10 }}
+                        />
+                        <YAxis 
+                          unit="%" 
+                          domain={[0, 100]} 
+                          tickMargin={10} 
+                          tick={{ fontSize: 12 }}
+                        />
+                        <ChartTooltip
+                          content={<ChartTooltipContent 
+                            formatter={(value) => [`${value}%`, 'Completion Rate']}
+                            labelFormatter={(label) => {
+                              const item = (range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData)
+                                .find((item: any) => item.name === label);
+                              return range === 'weekly' 
+                                ? item?.tooltip || label 
+                                : `${label}: ${item?.completedDays || 0}/${item?.totalDays || 0} days`;
+                            }}
+                          />}
                         />
                         <Bar
                           dataKey="value"
-                          fill="hsl(var(--primary))"
+                          fill="#9b87f5"
                           radius={[4, 4, 0, 0]}
+                          className="hover:opacity-80 transition-opacity"
                         />
                       </BarChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                   </div>
                 </div>
               </CardContent>
