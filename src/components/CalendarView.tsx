@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -254,7 +255,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           </Badge>
                         ))}
                         {dateEvents.length > 3 && (
-                          <span className="text-[9px] text-muted-foreground text-center">
+                          <span className="text-[9px] calendar-more-text bg-secondary/70 px-1 py-0.5 rounded text-foreground font-medium">
                             +{dateEvents.length - 3} more
                           </span>
                         )}

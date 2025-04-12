@@ -82,6 +82,7 @@ export default {
           800: '#115e59',
           900: '#134e4a',
         },
+        chartBar: '#0d968b', // Chart bar color fixed to requested hex
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -117,6 +118,9 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
         'float': 'float 3s ease-in-out infinite',
+      },
+      screens: {
+        'xs': '480px',
       }
     }
   },

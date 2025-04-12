@@ -143,6 +143,25 @@
   .tabs-trigger {
     @apply min-w-[100px] flex-1;
   }
+
+  /* Better padding for small screens */
+  .card-content {
+    @apply p-3;
+  }
+  
+  /* Adjust font size for mobile */
+  h1 {
+    @apply text-2xl;
+  }
+  
+  h2 {
+    @apply text-xl;
+  }
+  
+  .completion-trend-container {
+    height: auto !important;
+    min-height: 250px;
+  }
 }
 
 @media (min-width: 641px) and (max-width: 768px) {
@@ -157,6 +176,11 @@
   main {
     @apply pr-16;
   }
+  
+  .completion-trend-container {
+    height: auto !important;
+    min-height: 300px;
+  }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
@@ -167,11 +191,21 @@
   main {
     @apply pr-16 md:pr-64;
   }
+  
+  .completion-trend-container {
+    height: auto !important;
+    min-height: 350px;
+  }
 }
 
 @media (min-width: 1025px) {
   .habit-grid {
     @apply grid-cols-3 gap-5;
+  }
+  
+  .completion-trend-container {
+    height: auto !important;
+    min-height: 400px;
   }
 }
 
@@ -296,11 +330,34 @@
 
 /* Improved completion trend graph */
 .completion-trend-container {
-  @apply w-full overflow-x-auto pb-4;
+  @apply w-full overflow-hidden;
 }
 
 .completion-trend-inner {
-  @apply min-w-full;
+  @apply min-w-full overflow-x-auto overflow-y-hidden;
+}
+
+/* Dark mode optimizations */
+.dark .dashboard-add-button {
+  @apply bg-muted hover:bg-muted/80 text-foreground;
+}
+
+.dark .calendar-more-text {
+  @apply text-foreground font-medium;
+}
+
+/* Fix buttons in dark mode */
+.dark .bg-gray-100 {
+  @apply bg-muted text-foreground;
+}
+
+.dark .bg-gray-100.hover\:bg-gray-200:hover {
+  @apply bg-muted/80;
+}
+
+/* Responsive chart fixes */
+.recharts-responsive-container {
+  @apply !min-h-[250px];
 }
 
 @media (max-width: 768px) {

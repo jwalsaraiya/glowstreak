@@ -18,7 +18,9 @@ interface StreakAnalyticsProps {
 const StreakAnalytics: React.FC<StreakAnalyticsProps> = ({ streaks }) => {
   const totalCompletionAvg = streaks.reduce((sum, streak) => sum + streak.completion, 0) / streaks.length;
   
-  const topStreak = [...streaks].sort((a, b) => b.currentStreak - a.currentStreak)[0];
+  // Sort streaks by current streak (highest to lowest)
+  const sortedStreaks = [...streaks].sort((a, b) => b.currentStreak - a.currentStreak);
+  const topStreak = sortedStreaks[0];
 
   return (
     <Card className="h-full">
@@ -40,9 +42,9 @@ const StreakAnalytics: React.FC<StreakAnalyticsProps> = ({ streaks }) => {
           </div>
         </div>
         
-        <h3 className="font-medium text-base mb-4">Top Streaks</h3>
-        <div className="space-y-4">
-          {streaks.slice(0, 3).map((streak, i) => (
+        <h3 className="font-medium text-base mb-4">All Streaks</h3>
+        <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+          {sortedStreaks.map((streak, i) => (
             <div key={i} className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
@@ -61,12 +63,6 @@ const StreakAnalytics: React.FC<StreakAnalyticsProps> = ({ streaks }) => {
             </div>
           ))}
         </div>
-
-        {streaks.length > 3 && (
-          <div className="mt-4 text-center">
-            <span className="text-sm font-medium text-foreground">+ {streaks.length - 3} more</span>
-          </div>
-        )}
 
         {streaks.some(s => s.currentStreak >= 10) && (
           <div className="mt-6 flex items-center justify-center p-3 bg-primary/10 rounded-lg animate-float">
