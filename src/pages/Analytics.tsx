@@ -491,13 +491,13 @@ const AnalyticsPage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-80">
+                <div className="h-80 overflow-y-hidden">
                   <div className={`${range === 'weekly' ? 'min-w-[1200px]' : 'min-w-[700px]'} h-full overflow-x-auto`}>
                     <ChartContainer 
                       className="mt-4"
                       config={{
                         primary: {
-                          color: "#33C3F0"
+                          color: "#0d968b"
                         }
                       }}
                     >
@@ -533,7 +533,7 @@ const AnalyticsPage: React.FC = () => {
                         />
                         <Bar
                           dataKey="value"
-                          fill="#33C3F0"
+                          fill="#0d968b"
                           radius={[4, 4, 0, 0]}
                           className="hover:opacity-80 transition-opacity"
                         />
