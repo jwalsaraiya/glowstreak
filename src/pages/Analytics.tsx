@@ -491,27 +491,27 @@ const AnalyticsPage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-80 overflow-x-auto">
-                  <div className={`${range === 'weekly' ? 'min-w-[1200px]' : 'min-w-[700px]'} h-full`}>
+                <div className="h-80">
+                  <div className={`${range === 'weekly' ? 'min-w-[1200px]' : 'min-w-[700px]'} h-full overflow-x-auto`}>
                     <ChartContainer 
                       className="mt-4"
                       config={{
                         primary: {
-                          color: "#9b87f5" 
+                          color: "#33C3F0"
                         }
                       }}
                     >
                       <BarChart
                         data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
                         margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
-                        barSize={range === 'weekly' ? 25 : 40}
+                        barSize={range === 'weekly' ? 35 : 50}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
                         <XAxis 
                           dataKey="name" 
                           tick={{ fontSize: 12 }} 
                           tickMargin={10}
-                          padding={{ left: 10, right: 10 }}
+                          padding={{ left: 20, right: 20 }}
                         />
                         <YAxis 
                           unit="%" 
@@ -533,7 +533,7 @@ const AnalyticsPage: React.FC = () => {
                         />
                         <Bar
                           dataKey="value"
-                          fill="#9b87f5"
+                          fill="#33C3F0"
                           radius={[4, 4, 0, 0]}
                           className="hover:opacity-80 transition-opacity"
                         />
