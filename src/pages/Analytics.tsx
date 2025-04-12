@@ -491,7 +491,7 @@ const AnalyticsPage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-80 overflow-y-hidden">
+                <div className="h-[300px] overflow-y-visible">
                   <div className={`${range === 'weekly' ? 'min-w-[1200px]' : 'min-w-[700px]'} h-full overflow-x-auto`}>
                     <ChartContainer 
                       className="mt-4"
@@ -505,6 +505,7 @@ const AnalyticsPage: React.FC = () => {
                         data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
                         margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
                         barSize={range === 'weekly' ? 35 : 50}
+                        height={250}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
                         <XAxis 

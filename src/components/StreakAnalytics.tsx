@@ -62,6 +62,12 @@ const StreakAnalytics: React.FC<StreakAnalyticsProps> = ({ streaks }) => {
           ))}
         </div>
 
+        {streaks.length > 3 && (
+          <div className="mt-4 text-center">
+            <span className="text-sm font-medium text-foreground">+ {streaks.length - 3} more</span>
+          </div>
+        )}
+
         {streaks.some(s => s.currentStreak >= 10) && (
           <div className="mt-6 flex items-center justify-center p-3 bg-primary/10 rounded-lg animate-float">
             <Trophy className="h-5 w-5 text-primary mr-2" />
