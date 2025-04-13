@@ -117,20 +117,21 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   };
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-7xl h-full flex flex-col">
+    <div className="container mx-auto py-6 px-4 max-w-7xl overflow-y-auto h-full">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Calendar</h1>
         <p className="text-muted-foreground">View and manage your habits, tasks and events</p>
       </div>
 
-      <div className="flex-grow overflow-hidden">
+      <div className="flex-grow h-[calc(100vh-200px)]">
         <CalendarView
           events={events}
           onDateSelect={onDateSelect}
-          onEventClick={toggleEventCompletion}
-          showAddButton={false}  // Hide the Add button
+          onEventClick={() => {}} // Disable toggling completion
+          showAddButton={false}
           selectedDate={selectedDate}
           firstDayOfWeek={settings.firstDayOfWeek}
+          readOnly={true} // Add a readOnly prop that we'll use in CalendarView
         />
       </div>
     </div>

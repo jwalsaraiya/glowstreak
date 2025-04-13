@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, isSameDay, isBefore, differenceInDays, differenceInCalendarDays, addDays, isSameMonth, isSameWeek, isSameYear } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
@@ -99,73 +98,163 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [habits, events, tasks, user]);
 
-  const calculateStreak = (completionDates: string[], itemType: string) => {
-    if (itemType !== 'habit') return 0;
-    
-    if (!completionDates || completionDates.length === 0) return 0;
+  const calculateStreak = (completionDates: string[], itemType: string, recurrence: string = 'none', startDateStr: string | undefined = undefined) => {
+    if (itemType !== 'habit' || !completionDates || completionDates.length === 0) return 0;
     
     const sortedDates = [...completionDates].map(d => new Date(d)).sort((a, b) => a.getTime() - b.getTime());
-    
+    const startDate = startDateStr ? new Date(startDateStr) : sortedDates[0];
     const mostRecentDate = new Date(sortedDates[sortedDates.length - 1]);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const daysSinceLastCompletion = differenceInCalendarDays(today, mostRecentDate);
-    if (daysSinceLastCompletion > 1) return 0;
+    // Check if today or yesterday has a completion
+    const todayHasCompletion = sortedDates.some(d => isSameDay(d, today));
+    const yesterdayHasCompletion = sortedDates.some(d => isSameDay(d, addDays(today, -1)));
     
-    let streak = 1;
-    let currentDate = mostRecentDate;
-    
-    for (let i = sortedDates.length - 2; i >= 0; i--) {
-      const previousDate = new Date(sortedDates[i]);
-      const daysBetween = differenceInCalendarDays(currentDate, previousDate);
-      
-      if (daysBetween === 1) {
-        streak++;
-        currentDate = previousDate;
-      } else if (daysBetween === 0) {
-        continue;
-      } else {
-        break;
-      }
+    // If neither today nor yesterday has a completion, streak is broken
+    if (!todayHasCompletion && !yesterdayHasCompletion) {
+      return 0;
     }
     
-    return streak;
+    // For daily habits, check for consecutive days
+    if (recurrence === 'daily') {
+      let streak = 1;
+      let checkDate = todayHasCompletion ? today : addDays(today, -1);
+      
+      for (let i = 1; i < 1000; i++) {
+        const prevDate = addDays(checkDate, -1);
+        
+        // Check if the previous day has a completion
+        const hasCompletion = sortedDates.some(d => isSameDay(d, prevDate));
+        if (hasCompletion) {
+          streak++;
+          checkDate = prevDate;
+        } else {
+          break;
+        }
+      }
+      
+      return streak;
+    }
+    
+    // For weekly habits (check same day of week)
+    else if (recurrence === 'weekly') {
+      let streak = 1;
+      let checkDate = todayHasCompletion ? today : addDays(today, -1);
+      let currentWeek = format(checkDate, 'yyyy-ww');
+      let weekCount = 1;
+      
+      // Go back through sorted dates and count consecutive weeks
+      for (let i = sortedDates.length - 2; i >= 0; i--) {
+        const dateWeek = format(sortedDates[i], 'yyyy-ww');
+        
+        // If it's an older week and it has the same weekday
+        if (dateWeek !== currentWeek && sortedDates[i].getDay() === checkDate.getDay()) {
+          const weekDiff = differenceInDays(checkDate, sortedDates[i]) / 7;
+          // If weeks are consecutive
+          if (Math.round(weekDiff) === weekCount) {
+            streak++;
+            weekCount++;
+            currentWeek = dateWeek;
+            checkDate = sortedDates[i];
+          } else {
+            break;
+          }
+        }
+      }
+      
+      return streak;
+    }
+    
+    // For monthly habits (check same day of month)
+    else if (recurrence === 'monthly') {
+      let streak = 1;
+      let checkDate = todayHasCompletion ? today : addDays(today, -1);
+      let currentMonth = format(checkDate, 'yyyy-MM');
+      let monthCount = 1;
+      
+      // Go back through sorted dates and count consecutive months
+      for (let i = sortedDates.length - 2; i >= 0; i--) {
+        const dateMonth = format(sortedDates[i], 'yyyy-MM');
+        
+        // If it's an older month and it has the same day of the month
+        if (dateMonth !== currentMonth && sortedDates[i].getDate() === checkDate.getDate()) {
+          const monthDiff = (checkDate.getMonth() - sortedDates[i].getMonth()) + 
+                           (12 * (checkDate.getFullYear() - sortedDates[i].getFullYear()));
+          // If months are consecutive
+          if (monthDiff === monthCount) {
+            streak++;
+            monthCount++;
+            currentMonth = dateMonth;
+            checkDate = sortedDates[i];
+          } else {
+            break;
+          }
+        }
+      }
+      
+      return streak;
+    }
+    
+    // For yearly habits (check same day and month)
+    else if (recurrence === 'yearly') {
+      let streak = 1;
+      let checkDate = todayHasCompletion ? today : addDays(today, -1);
+      let currentYear = checkDate.getFullYear();
+      let yearCount = 1;
+      
+      // Go back through sorted dates and count consecutive years
+      for (let i = sortedDates.length - 2; i >= 0; i--) {
+        const dateYear = sortedDates[i].getFullYear();
+        
+        // If it's an older year and it has the same day and month
+        if (dateYear !== currentYear && 
+            sortedDates[i].getDate() === checkDate.getDate() && 
+            sortedDates[i].getMonth() === checkDate.getMonth()) {
+          // If years are consecutive
+          if (currentYear - dateYear === yearCount) {
+            streak++;
+            yearCount++;
+            currentYear = dateYear;
+            checkDate = sortedDates[i];
+          } else {
+            break;
+          }
+        }
+      }
+      
+      return streak;
+    }
+    
+    // For one-time habits, streak is just 1 if completed
+    return todayHasCompletion || yesterdayHasCompletion ? 1 : 0;
   };
 
-  // Updated function that checks recurrence patterns
   const shouldItemBeDisplayed = (item: any, selectedDate: Date) => {
-    // Get the start date of the item
     const itemStartDate = new Date(item.startDate || item.date);
     itemStartDate.setHours(0, 0, 0, 0);
     selectedDate.setHours(0, 0, 0, 0);
     
-    // If the selected date is before the item start date, don't display it
     if (isBefore(selectedDate, itemStartDate)) {
       return false;
     }
     
-    // One-time items: only show on the exact date
     if (item.recurrence === 'none') {
       return isSameDay(itemStartDate, selectedDate);
     }
     
-    // Daily items: show every day after start date
     if (item.recurrence === 'daily') {
       return true;
     }
     
-    // Weekly items: show on the same day of week
     if (item.recurrence === 'weekly') {
       return itemStartDate.getDay() === selectedDate.getDay();
     }
     
-    // Monthly items: show on the same day of month
     if (item.recurrence === 'monthly') {
       return itemStartDate.getDate() === selectedDate.getDate();
     }
     
-    // Yearly items: show on the same month and day
     if (item.recurrence === 'yearly') {
       return itemStartDate.getDate() === selectedDate.getDate() && 
              itemStartDate.getMonth() === selectedDate.getMonth();
@@ -180,7 +269,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     
     return items
       .filter(item => {
-        // Apply recurrence rules
         return shouldItemBeDisplayed(item, selectedDate);
       })
       .map(item => {
@@ -188,9 +276,13 @@ const Dashboard: React.FC<DashboardProps> = ({
           ? item.completionDates?.some((dateStr: string) => 
               isSameDay(new Date(dateStr), selectedDate)
             ) || false
-          : item.isCompleted || false;
+          : (item.completedDates && Array.isArray(item.completedDates)) 
+            ? item.completedDates.some((dateStr: string) => 
+                isSameDay(new Date(dateStr), selectedDate)
+              ) || false
+            : false;
           
-        const streak = calculateStreak(item.completionDates, itemType);
+        const streak = calculateStreak(item.completionDates, itemType, item.recurrence, item.startDate);
           
         return { 
           ...item, 
@@ -242,14 +334,34 @@ const Dashboard: React.FC<DashboardProps> = ({
     } else if (type === 'event') {
       setEvents(events.map(event => {
         if (event.id === id) {
-          return { ...event, isCompleted: !event.isCompleted };
+          const dateStr = selectedDate.toISOString();
+          const isCompleted = !event.completedDates?.some((d: string) => 
+            isSameDay(new Date(d), selectedDate)
+          );
+          
+          return { 
+            ...event, 
+            completedDates: isCompleted ? 
+              [...(event.completedDates || []), dateStr] : 
+              (event.completedDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
+          };
         }
         return event;
       }));
     } else {
       setTasks(tasks.map(task => {
         if (task.id === id) {
-          return { ...task, isCompleted: !task.isCompleted };
+          const dateStr = selectedDate.toISOString();
+          const isCompleted = !task.completedDates?.some((d: string) => 
+            isSameDay(new Date(d), selectedDate)
+          );
+          
+          return { 
+            ...task, 
+            completedDates: isCompleted ? 
+              [...(task.completedDates || []), dateStr] : 
+              (task.completedDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
+          };
         }
         return task;
       }));

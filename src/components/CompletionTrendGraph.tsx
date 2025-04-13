@@ -45,8 +45,10 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
 
   // Determine chart width based on data length - increased spacing for better visibility
   const getChartWidth = () => {
-    const baseWidth = range === 'weekly' ? 80 : 100; // Increased width per bar
-    return Math.max(data.length * baseWidth, 800); // Ensure minimum width
+    // Calculate width based on number of items and desired bar width
+    const barWidth = range === 'weekly' ? 40 : 60; // Thicker bars
+    const barGap = range === 'weekly' ? 30 : 40;   // More space between bars
+    return Math.max(data.length * (barWidth + barGap), 800); // Ensure minimum width
   };
 
   // Custom tooltip component
@@ -90,29 +92,17 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         });
       }
     };
-    
-    const handleTouch = (e: TouchEvent) => {
-      if (scrollRef.current) {
-        // Touch events are handled natively by the browser for scrolling
-        // But we can add additional functionality if needed
-      }
-    };
 
     const currentRef = scrollRef.current;
     
     if (currentRef) {
       // Add wheel event listener with passive: false to allow preventDefault
       currentRef.addEventListener('wheel', handleWheel, { passive: false });
-      // Add touch events
-      currentRef.addEventListener('touchstart', handleTouch);
-      currentRef.addEventListener('touchmove', handleTouch);
     }
     
     return () => {
       if (currentRef) {
         currentRef.removeEventListener('wheel', handleWheel);
-        currentRef.removeEventListener('touchstart', handleTouch);
-        currentRef.removeEventListener('touchmove', handleTouch);
       }
     };
   }, []);
@@ -141,8 +131,8 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
               <BarChart
                 data={data}
                 margin={{ top: 20, right: 20, left: 20, bottom: 40 }} // Increased bottom margin for labels
-                barCategoryGap={range === 'weekly' ? 20 : 25} // Increased gap between bars
-                barSize={range === 'weekly' ? 44 : 60} // Increased bar size
+                barCategoryGap={range === 'weekly' ? 30 : 40} // Increased gap between bars
+                barSize={range === 'weekly' ? 40 : 60} // Thicker bar size
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkTheme ? '#33333a' : '#eee'} />
                 <XAxis 
@@ -152,6 +142,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                   axisLine={{ stroke: isDarkTheme ? '#33333a' : '#eee' }}
                   tickLine={false}
                   height={40} // Increased height for X-axis
+                  interval={0} // Show all ticks
                 />
                 <YAxis 
                   unit="%" 
@@ -181,11 +172,13 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         </div>
         
         {/* Add CSS to hide scrollbar but allow scrolling */}
-        <style>{`
-          .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            .hide-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+          `
+        }} />
         
         {/* Scroll buttons */}
         <div className="absolute top-1/2 left-0 -translate-y-1/2 z-10">

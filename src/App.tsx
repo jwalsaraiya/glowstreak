@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -56,7 +55,8 @@ const AppContent: React.FC = () => {
       date: values.startDate.toISOString(),
       startDate: values.startDate.toISOString(), // Store start date separately for recurrence checks
       streak: 0,
-      completionDates: []
+      completionDates: [],
+      completedDates: [] // For tasks and events, per-date completion tracking
     };
     
     // Add to the appropriate array based on item type
