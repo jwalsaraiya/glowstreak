@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -255,7 +254,7 @@ const AnalyticsPage: React.FC = () => {
 
   if (!habits.length) {
     return (
-      <div className="container mx-auto py-6 max-w-7xl px-4 sm:px-6">
+      <div className="container mx-auto py-6 max-w-7xl px-4">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Analytics</h1>
           <p className="text-muted-foreground">Track your progress and see your habits analytics</p>
@@ -274,7 +273,7 @@ const AnalyticsPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-6 max-w-7xl px-4 sm:px-6">
+    <div className="container mx-auto py-6 max-w-7xl px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Analytics</h1>
         <p className="text-muted-foreground">Track your progress and see your habits analytics</p>
@@ -283,9 +282,9 @@ const AnalyticsPage: React.FC = () => {
       <div className="mb-6">
         <Card className="mb-6">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-semibold flex items-center flex-wrap">
-              <Calendar className="mr-2 h-5 w-5 flex-shrink-0" />
-              <span>Select Habit to Analyze</span>
+            <CardTitle className="text-xl font-semibold flex items-center">
+              <Calendar className="mr-2 h-5 w-5" />
+              Select Habit to Analyze
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -293,7 +292,7 @@ const AnalyticsPage: React.FC = () => {
               value={selectedHabit || ''} 
               onValueChange={setSelectedHabit}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger>
                 <SelectValue placeholder="Select a habit" />
               </SelectTrigger>
               <SelectContent>
@@ -310,12 +309,12 @@ const AnalyticsPage: React.FC = () => {
 
       {selectedStats && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-semibold flex items-center">
-                  <CheckCheck className="mr-2 h-5 w-5 flex-shrink-0" />
-                  <span>Completion Rate</span>
+                  <CheckCheck className="mr-2 h-5 w-5" />
+                  Completion Rate
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -323,7 +322,7 @@ const AnalyticsPage: React.FC = () => {
                 <p className="text-sm text-muted-foreground mb-4">Overall habit completion</p>
                 <Progress value={selectedStats.completionRate} className="h-2" />
                 <p className="text-sm text-muted-foreground mt-2 flex items-center">
-                  <ArrowRight className="h-3 w-3 mr-1 text-primary flex-shrink-0" />
+                  <ArrowRight className="h-3 w-3 mr-1 text-primary" />
                   <span>Keep up the good work!</span>
                 </p>
               </CardContent>
@@ -332,16 +331,16 @@ const AnalyticsPage: React.FC = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-semibold flex items-center">
-                  <Flame className="mr-2 h-5 w-5 flex-shrink-0" />
-                  <span>Current Streak</span>
+                  <Flame className="mr-2 h-5 w-5" />
+                  Current Streak
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold mb-2">{selectedStats.currentStreak} days</div>
-                <p className="text-sm text-muted-foreground mb-4 truncate">{selectedStats.name}</p>
+                <p className="text-sm text-muted-foreground mb-4">{selectedStats.name}</p>
                 <Progress value={(selectedStats.currentStreak / 30) * 100} className="h-2" />
                 <p className="text-sm text-muted-foreground mt-2 flex items-center">
-                  <Zap className="h-3 w-3 mr-1 text-primary flex-shrink-0" />
+                  <Zap className="h-3 w-3 mr-1 text-primary" />
                   <span>Longest streak: {selectedStats.longestStreak} days</span>
                 </p>
               </CardContent>
@@ -350,8 +349,8 @@ const AnalyticsPage: React.FC = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-semibold flex items-center">
-                  <PieChart className="mr-2 h-5 w-5 flex-shrink-0" />
-                  <span>Success vs Fail Count</span>
+                  <PieChart className="mr-2 h-5 w-5" />
+                  Success vs Fail Count
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -365,7 +364,7 @@ const AnalyticsPage: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Fail</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mb-2 mt-4 flex-wrap">
+                <div className="flex items-center gap-2 mb-2 mt-4">
                   <Badge className="bg-green-500">Success</Badge>
                   <span className="text-sm">vs</span>
                   <Badge variant="outline" className="text-red-500">Fail</Badge>
@@ -379,12 +378,12 @@ const AnalyticsPage: React.FC = () => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-semibold flex items-center">
-                  <CheckCheck className="mr-2 h-5 w-5 flex-shrink-0" />
-                  <span>Weekly Completions</span>
+                  <CheckCheck className="mr-2 h-5 w-5" />
+                  Weekly Completions
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -400,8 +399,8 @@ const AnalyticsPage: React.FC = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-semibold flex items-center">
-                  <CheckCheck className="mr-2 h-5 w-5 flex-shrink-0" />
-                  <span>Monthly Completions</span>
+                  <CheckCheck className="mr-2 h-5 w-5" />
+                  Monthly Completions
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -417,8 +416,8 @@ const AnalyticsPage: React.FC = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-semibold flex items-center">
-                  <CheckCheck className="mr-2 h-5 w-5 flex-shrink-0" />
-                  <span>Yearly Completions</span>
+                  <CheckCheck className="mr-2 h-5 w-5" />
+                  Yearly Completions
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -450,10 +449,10 @@ const AnalyticsPage: React.FC = () => {
               <CardHeader>
                 <div className="flex justify-between items-center flex-wrap gap-4">
                   <CardTitle className="text-xl font-semibold flex items-center">
-                    <BarChart2 className="mr-2 h-5 w-5 flex-shrink-0" />
-                    <span>Completion Trend</span>
+                    <BarChart2 className="mr-2 h-5 w-5" />
+                    Completion Trend
                   </CardTitle>
-                  <div className="flex items-center space-x-4 flex-wrap gap-2">
+                  <div className="flex items-center space-x-4">
                     <div className="flex items-center">
                       <Button
                         variant="outline"
@@ -463,7 +462,7 @@ const AnalyticsPage: React.FC = () => {
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <span className="mx-2 text-sm font-medium whitespace-nowrap">{selectedYear}</span>
+                      <span className="mx-2 text-sm font-medium">{selectedYear}</span>
                       <Button
                         variant="outline"
                         size="icon"
