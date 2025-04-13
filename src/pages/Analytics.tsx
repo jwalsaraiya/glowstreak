@@ -487,7 +487,7 @@ const AnalyticsPage: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-2 pb-2">
                 {selectedStats && (
                   <CompletionTrendGraph 
                     data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}

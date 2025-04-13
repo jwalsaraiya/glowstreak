@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -364,4 +363,13 @@
   .completion-trend-inner {
     @apply min-w-[600px];
   }
+}
+
+/* Scrollable chart container */
+.chart-scroll-container {
+  @apply w-full overflow-x-auto;
+}
+
+.recharts-cartesian-axis-tick-line {
+  display: none;
 }
