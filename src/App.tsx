@@ -18,6 +18,7 @@ import { ThemeProvider } from "./hooks/use-theme";
 import { AuthProvider, useAuth } from "./hooks/use-auth";
 import { ItemType } from "./components/HabitForm";
 
+// Create a new query client
 const queryClient = new QueryClient();
 
 // Protected route component
@@ -175,13 +176,28 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  // Persist user login state in localStorage
+  // Add CSS to hide the Lovable popup
   useEffect(() => {
-    const storedAuth = localStorage.getItem('isAuthenticated');
-    if (storedAuth === 'true') {
-      // User authentication is already handled in the AuthProvider
-      // This just ensures we don't clear the auth state on page refresh
-    }
+    // Create a style element to hide the popup
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Hide the "Edit with Lovable" popup */
+      #lovable-edit-button, 
+      .lovable-button, 
+      [id*="lovable-"], 
+      [class*="lovable-"],
+      .lovable-badge { 
+        display: none !important; 
+        visibility: hidden !important; 
+        opacity: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Cleanup function
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   return (
