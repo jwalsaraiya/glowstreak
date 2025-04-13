@@ -445,7 +445,7 @@ const AnalyticsPage: React.FC = () => {
           )}
 
           <div className="grid grid-cols-1 gap-6 mb-8">
-            <Card>
+            <Card className="h-[400px]">
               <CardHeader>
                 <div className="flex justify-between items-center flex-wrap gap-4">
                   <CardTitle className="text-xl font-semibold flex items-center">
@@ -487,7 +487,7 @@ const AnalyticsPage: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="px-2 pb-2">
+              <CardContent className="h-[calc(100%-80px)]">
                 {selectedStats && (
                   <CompletionTrendGraph 
                     data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}

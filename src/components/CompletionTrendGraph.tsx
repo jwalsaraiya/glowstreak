@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -44,8 +44,8 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
 
   // Determine chart dimensions based on data length
   const getChartWidth = () => {
-    const baseWidth = range === 'weekly' ? 25 : 50; // Width per bar
-    return Math.max(data.length * baseWidth, 800); // Minimum width of 800px
+    const baseWidth = range === 'weekly' ? 40 : 70; // Increased width per bar
+    return Math.max(data.length * baseWidth, 800); // Ensure minimum width
   };
 
   // Custom tooltip component
@@ -69,15 +69,15 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   };
 
   return (
-    <div className="w-full overflow-hidden" style={{ height: range === 'weekly' ? '350px' : '300px' }}>
+    <div className="w-full h-full" style={{ minHeight: '280px' }}>
       <ScrollArea className="h-full">
-        <div style={{ width: `${getChartWidth()}px`, minWidth: '100%', height: '100%' }}>
+        <div ref={scrollRef} style={{ width: `${getChartWidth()}px`, minWidth: '100%', height: '100%', minHeight: '280px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
-              barCategoryGap={range === 'weekly' ? 4 : 10}
-              barSize={range === 'weekly' ? 18 : 35}
+              margin={{ top: 20, right: 40, left: 20, bottom: 20 }}
+              barCategoryGap={range === 'weekly' ? 8 : 12}
+              barSize={range === 'weekly' ? 28 : 45}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkTheme ? '#33333a' : '#eee'} />
               <XAxis 
@@ -86,6 +86,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                 tickMargin={10}
                 axisLine={{ stroke: isDarkTheme ? '#33333a' : '#eee' }}
                 tickLine={false}
+                height={30}
               />
               <YAxis 
                 unit="%" 
@@ -94,6 +95,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                 tick={{ fontSize: 12 }} 
                 axisLine={{ stroke: isDarkTheme ? '#33333a' : '#eee' }}
                 tickLine={false}
+                width={50}
               />
               <Tooltip content={<CustomTooltip />} />
               <ReferenceLine 
@@ -105,7 +107,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                 <Label 
                   value={`Avg: ${avgCompletion}%`} 
                   position="right"
-                  fill={isDarkTheme ? '#ddd' : '#888'} 
+                  fill={isDarkTheme ? '#ffffff' : '#333333'} 
                   fontSize={12}
                   fontWeight={500}
                 />
