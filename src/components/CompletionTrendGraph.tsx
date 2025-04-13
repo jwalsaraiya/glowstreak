@@ -43,9 +43,9 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     ? Math.round(data.reduce((sum, item) => sum + item.value, 0) / data.length) 
     : 0;
 
-  // Determine chart width based on data length
+  // Determine chart width based on data length - increased spacing for better visibility
   const getChartWidth = () => {
-    const baseWidth = range === 'weekly' ? 50 : 80; // Width per bar
+    const baseWidth = range === 'weekly' ? 80 : 100; // Increased width per bar
     return Math.max(data.length * baseWidth, 800); // Ensure minimum width
   };
 
@@ -84,25 +84,35 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       if (scrollRef.current && e.deltaY !== 0) {
-        // If the user is holding shift, scroll horizontally
-        if (e.shiftKey) {
-          e.preventDefault();
-          scrollRef.current.scrollBy({
-            left: e.deltaY,
-          });
-        }
+        e.preventDefault();
+        scrollRef.current.scrollBy({
+          left: e.deltaY,
+        });
+      }
+    };
+    
+    const handleTouch = (e: TouchEvent) => {
+      if (scrollRef.current) {
+        // Touch events are handled natively by the browser for scrolling
+        // But we can add additional functionality if needed
       }
     };
 
     const currentRef = scrollRef.current;
     
     if (currentRef) {
+      // Add wheel event listener with passive: false to allow preventDefault
       currentRef.addEventListener('wheel', handleWheel, { passive: false });
+      // Add touch events
+      currentRef.addEventListener('touchstart', handleTouch);
+      currentRef.addEventListener('touchmove', handleTouch);
     }
     
     return () => {
       if (currentRef) {
         currentRef.removeEventListener('wheel', handleWheel);
+        currentRef.removeEventListener('touchstart', handleTouch);
+        currentRef.removeEventListener('touchmove', handleTouch);
       }
     };
   }, []);
@@ -130,18 +140,18 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
             <ResponsiveContainer width="100%" height={240}>
               <BarChart
                 data={data}
-                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-                barCategoryGap={range === 'weekly' ? 12 : 16}
-                barSize={range === 'weekly' ? 32 : 50}
+                margin={{ top: 20, right: 20, left: 20, bottom: 40 }} // Increased bottom margin for labels
+                barCategoryGap={range === 'weekly' ? 20 : 25} // Increased gap between bars
+                barSize={range === 'weekly' ? 44 : 60} // Increased bar size
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkTheme ? '#33333a' : '#eee'} />
                 <XAxis 
                   dataKey="name" 
                   tick={{ fontSize: 12 }} 
-                  tickMargin={10}
+                  tickMargin={20} // Increased margin for text
                   axisLine={{ stroke: isDarkTheme ? '#33333a' : '#eee' }}
                   tickLine={false}
-                  height={30}
+                  height={40} // Increased height for X-axis
                 />
                 <YAxis 
                   unit="%" 

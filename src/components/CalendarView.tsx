@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -66,7 +65,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   const handleEventClick = (eventId: string) => {
-    if (onEventClick) onEventClick(eventId);
+    // We're disabling event clicking for marking completion
+    // but keeping the function in case we need it for other purposes like viewing details
+    // if (onEventClick) onEventClick(eventId);
   };
 
   const changeMonth = (direction: 'prev' | 'next') => {
@@ -183,31 +184,54 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     });
   };
 
+  // Get background and text colors based on event type
+  const getEventColors = (event: CalendarEvent) => {
+    switch (event.type) {
+      case 'habit':
+        return {
+          bg: 'bg-primary/10',
+          border: 'border-primary',
+          text: 'text-foreground'
+        };
+      case 'task':
+        return event.priority === 'high' 
+          ? {
+              bg: 'bg-destructive/10',
+              border: 'border-destructive',
+              text: 'text-foreground'
+            }
+          : {
+              bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+              border: 'border-yellow-400',
+              text: 'text-foreground'
+            };
+      case 'event':
+        return {
+          bg: 'bg-blue-100 dark:bg-blue-900/30',
+          border: 'border-blue-400',
+          text: 'text-foreground'
+        };
+      default:
+        return {
+          bg: 'bg-secondary',
+          border: 'border-secondary',
+          text: 'text-foreground'
+        };
+    }
+  };
+
   const weeks = organizeDaysIntoWeeks();
   const daysOfWeek = getDaysOfWeek();
   
   const selectedDateEvents = sortEvents(getEventsForDate(selectedDate));
 
   return (
-    <ScrollArea className="h-[calc(100vh-200px)] w-full">
-      <Card className="border shadow-none min-h-full">
+    <ScrollArea className="h-full w-full">
+      <Card className="border shadow-none">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-semibold flex items-center justify-between">
-            <div className="flex items-center">
-              <CalendarDays className="mr-2 h-5 w-5" />
-              Calendar
-            </div>
-            {showAddButton && onAddEvent && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="h-8 px-2" 
-                onClick={() => onAddEvent(selectedDate)}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Add</span>
-              </Button>
-            )}
+          <CardTitle className="text-xl font-semibold flex items-center">
+            <CalendarDays className="mr-2 h-5 w-5" />
+            Calendar
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -265,29 +289,29 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           {date.getDate()}
                         </div>
                         <div className="flex flex-col gap-1 max-h-[80px] overflow-y-auto">
-                          {dateEvents.slice(0, 3).map((event, idx) => (
-                            <Badge 
-                              key={idx}
-                              variant={event.type === 'event' ? 'secondary' : 'outline'}
-                              className={cn(
-                                "truncate text-xs py-1 cursor-pointer",
-                                event.isCompleted ? "opacity-70 line-through" : "",
-                                isEventLocked(event) ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90",
-                                event.priority === 'high' ? "border-l-2 border-destructive" : "",
-                                event.type === 'task' ? "border-l-2 border-yellow-400" : "",
-                                event.type === 'habit' ? "border-l-2 border-primary" : "",
-                                event.type === 'event' ? "border-l-2 border-blue-400" : ""
-                              )}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (!isEventLocked(event)) {
-                                  handleEventClick(event.id);
-                                }
-                              }}
-                            >
-                              {event.title}
-                            </Badge>
-                          ))}
+                          {dateEvents.slice(0, 3).map((event, idx) => {
+                            const colors = getEventColors(event);
+                            return (
+                              <Badge 
+                                key={idx}
+                                variant={event.type === 'event' ? 'secondary' : 'outline'}
+                                className={cn(
+                                  "truncate text-xs py-1 cursor-pointer",
+                                  colors.text,
+                                  event.isCompleted ? "opacity-70 line-through" : "",
+                                  isEventLocked(event) ? "opacity-50" : "",
+                                  `border-l-2 ${colors.border}`
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // We're now disabling event clicks for completion
+                                  // but keeping the onClick handler for future use
+                                }}
+                              >
+                                {event.title}
+                              </Badge>
+                            );
+                          })}
                           {dateEvents.length > 3 && (
                             <span className="text-[9px] calendar-more-text bg-secondary/70 px-1 py-0.5 rounded text-foreground font-medium">
                               +{dateEvents.length - 3} more
@@ -307,35 +331,31 @@ const CalendarView: React.FC<CalendarViewProps> = ({
               </h3>
               <div className="space-y-2">
                 {selectedDateEvents.length > 0 ? (
-                  selectedDateEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className={cn(
-                        "p-3 rounded-md",
-                        event.type === 'event' ? "bg-secondary border-l-2 border-blue-400" : 
-                        event.type === 'task' && event.priority === 'high' ? "bg-destructive/10 border-l-2 border-destructive" :
-                        event.type === 'task' ? "bg-yellow-100 border-l-2 border-yellow-400" : 
-                        "bg-primary/10 border-l-2 border-primary",
-                        event.isCompleted ? 'line-through opacity-70' : '',
-                        isEventLocked(event) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                      )}
-                      onClick={() => {
-                        if (!isEventLocked(event)) {
-                          handleEventClick(event.id);
-                        }
-                      }}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{event.title}</span>
-                        <div className="flex gap-1">
-                          {event.priority === 'high' && (
-                            <Badge variant="destructive">High</Badge>
-                          )}
-                          <Badge variant="outline">{event.type}</Badge>
+                  selectedDateEvents.map((event) => {
+                    const colors = getEventColors(event);
+                    return (
+                      <div
+                        key={event.id}
+                        className={cn(
+                          "p-3 rounded-md",
+                          colors.bg,
+                          `border-l-2 ${colors.border}`,
+                          colors.text,
+                          event.isCompleted ? 'line-through opacity-70' : ''
+                        )}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{event.title}</span>
+                          <div className="flex gap-1">
+                            {event.priority === 'high' && (
+                              <Badge variant="destructive">High</Badge>
+                            )}
+                            <Badge variant="outline">{event.type}</Badge>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="text-center py-8 space-y-2">
                     <p className="text-lg font-medium">You are Free Today!</p>

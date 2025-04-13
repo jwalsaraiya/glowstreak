@@ -112,85 +112,18 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   };
 
   const toggleEventCompletion = (eventId: string) => {
-    if (!user) return;
-
-    const userData = localStorage.getItem(`userData_${user.id}`);
-    if (!userData) return;
-    
-    const parsedData = JSON.parse(userData);
-    const today = new Date();
-    
-    // Check which array contains the event
-    let updated = false;
-    
-    if (parsedData.habits) {
-      const habitIndex = parsedData.habits.findIndex((h: any) => h.id === eventId);
-      if (habitIndex >= 0) {
-        const habit = parsedData.habits[habitIndex];
-        const completionDates = habit.completionDates || [];
-        
-        const todayStr = today.toISOString();
-        const alreadyCompleted = completionDates.some((dateStr: string) => 
-          isSameDay(new Date(dateStr), today)
-        );
-        
-        if (alreadyCompleted) {
-          // Remove today's date from completionDates
-          parsedData.habits[habitIndex].completionDates = completionDates.filter(
-            (dateStr: string) => !isSameDay(new Date(dateStr), today)
-          );
-          parsedData.habits[habitIndex].isCompleted = false;
-          if (parsedData.habits[habitIndex].streak > 0) {
-            parsedData.habits[habitIndex].streak -= 1;
-          }
-        } else {
-          // Add today's date to completionDates
-          completionDates.push(todayStr);
-          parsedData.habits[habitIndex].completionDates = completionDates;
-          parsedData.habits[habitIndex].isCompleted = true;
-          parsedData.habits[habitIndex].streak = (habit.streak || 0) + 1;
-        }
-        
-        updated = true;
-      }
-    }
-    
-    if (!updated && parsedData.tasks) {
-      const taskIndex = parsedData.tasks.findIndex((t: any) => t.id === eventId);
-      if (taskIndex >= 0) {
-        parsedData.tasks[taskIndex].isCompleted = !parsedData.tasks[taskIndex].isCompleted;
-        updated = true;
-      }
-    }
-    
-    if (updated) {
-      localStorage.setItem(`userData_${user.id}`, JSON.stringify(parsedData));
-      
-      // Reload events after update
-      const habits = parsedData.habits || [];
-      const tasks = parsedData.tasks || [];
-      const eventsData = parsedData.events || [];
-      
-      const combinedEvents = [
-        ...habits.map((habit: any) => ({ ...habit, type: 'habit' })),
-        ...tasks.map((task: any) => ({ ...task, type: 'task' })),
-        ...eventsData.map((event: any) => ({ ...event, type: 'event' }))
-      ];
-      
-      // Apply recurrence rules
-      const processedEvents = applyRecurrenceRules(combinedEvents);
-      setEvents(processedEvents);
-    }
+    // This function is no longer used for calendar view
+    // but kept for potential future use
   };
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-7xl">
+    <div className="container mx-auto py-6 px-4 max-w-7xl h-full flex flex-col">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Calendar</h1>
         <p className="text-muted-foreground">View and manage your habits, tasks and events</p>
       </div>
 
-      <div className="w-full">
+      <div className="flex-grow overflow-hidden">
         <CalendarView
           events={events}
           onDateSelect={onDateSelect}
