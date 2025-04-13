@@ -9,7 +9,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Cell
+  Cell,
+  Label
 } from 'recharts';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -88,11 +89,13 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
             strokeDasharray="3 3" 
             strokeWidth={1.5} 
           >
-            <label fill={isDarkTheme ? '#ddd' : '#888'} position="right">
-              <tspan fontSize="12" fontWeight="500">
-                Avg: {avgCompletion}%
-              </tspan>
-            </label>
+            <Label 
+              value={`Avg: ${avgCompletion}%`} 
+              position="right"
+              fill={isDarkTheme ? '#ddd' : '#888'} 
+              fontSize={12}
+              fontWeight={500}
+            />
           </ReferenceLine>
           <Bar 
             dataKey="value" 
