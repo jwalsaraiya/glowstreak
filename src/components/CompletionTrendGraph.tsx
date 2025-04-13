@@ -171,7 +171,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         </div>
         
         {/* Add CSS to hide scrollbar but allow scrolling */}
-        <style jsx>{`
+        <style>{`
           .hide-scrollbar::-webkit-scrollbar {
             display: none;
           }
