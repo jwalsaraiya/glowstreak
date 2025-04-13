@@ -8,12 +8,11 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
-  Cell,
-  Label
+  Cell
 } from 'recharts';
 import { useTheme } from '@/hooks/use-theme';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 
 interface DataItem {
   name: string;
@@ -44,7 +43,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
 
   // Determine chart dimensions based on data length
   const getChartWidth = () => {
-    const baseWidth = range === 'weekly' ? 40 : 70; // Increased width per bar
+    const baseWidth = range === 'weekly' ? 50 : 80; // Increased width per bar
     return Math.max(data.length * baseWidth, 800); // Ensure minimum width
   };
 
@@ -69,65 +68,72 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   };
 
   return (
-    <div className="w-full h-full" style={{ minHeight: '280px' }}>
-      <ScrollArea className="h-full">
-        <div ref={scrollRef} style={{ width: `${getChartWidth()}px`, minWidth: '100%', height: '100%', minHeight: '280px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data}
-              margin={{ top: 20, right: 40, left: 20, bottom: 20 }}
-              barCategoryGap={range === 'weekly' ? 8 : 12}
-              barSize={range === 'weekly' ? 28 : 45}
-            >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkTheme ? '#33333a' : '#eee'} />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 12 }} 
-                tickMargin={10}
-                axisLine={{ stroke: isDarkTheme ? '#33333a' : '#eee' }}
-                tickLine={false}
-                height={30}
-              />
-              <YAxis 
-                unit="%" 
-                domain={[0, 100]} 
-                tickMargin={10} 
-                tick={{ fontSize: 12 }} 
-                axisLine={{ stroke: isDarkTheme ? '#33333a' : '#eee' }}
-                tickLine={false}
-                width={50}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <ReferenceLine 
-                y={avgCompletion} 
-                stroke={isDarkTheme ? '#ddd' : '#888'} 
-                strokeDasharray="3 3" 
-                strokeWidth={1.5} 
+    <div className="w-full flex flex-col h-full">
+      <div className="flex-grow w-full" style={{ minHeight: '240px' }}>
+        <ScrollArea className="h-full">
+          <div 
+            ref={scrollRef} 
+            style={{ 
+              width: `${getChartWidth()}px`, 
+              minWidth: '100%', 
+              height: '100%', 
+              minHeight: '240px' 
+            }}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data}
+                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+                barCategoryGap={range === 'weekly' ? 12 : 16}
+                barSize={range === 'weekly' ? 32 : 50}
               >
-                <Label 
-                  value={`Avg: ${avgCompletion}%`} 
-                  position="right"
-                  fill={isDarkTheme ? '#ffffff' : '#333333'} 
-                  fontSize={12}
-                  fontWeight={500}
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkTheme ? '#33333a' : '#eee'} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 12 }} 
+                  tickMargin={10}
+                  axisLine={{ stroke: isDarkTheme ? '#33333a' : '#eee' }}
+                  tickLine={false}
+                  height={30}
                 />
-              </ReferenceLine>
-              <Bar 
-                dataKey="value" 
-                radius={[4, 4, 0, 0]} 
-                className="hover:opacity-80 transition-opacity"
-              >
-                {data.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={entry.value >= avgCompletion ? primaryColor : (isDarkTheme ? '#555' : '#d4d4d8')} 
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </ScrollArea>
+                <YAxis 
+                  unit="%" 
+                  domain={[0, 100]} 
+                  tickMargin={10} 
+                  tick={{ fontSize: 12 }} 
+                  axisLine={{ stroke: isDarkTheme ? '#33333a' : '#eee' }}
+                  tickLine={false}
+                  width={50}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar 
+                  dataKey="value" 
+                  radius={[4, 4, 0, 0]} 
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  {data.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.value >= avgCompletion ? primaryColor : (isDarkTheme ? '#555' : '#d4d4d8')} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </ScrollArea>
+      </div>
+      
+      {/* Average display below the graph instead of reference line */}
+      <div className="mt-2 flex items-center justify-center">
+        <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+          <div 
+            className="h-3 w-3 rounded-full"
+            style={{ backgroundColor: primaryColor }}
+          />
+          <span>Average Completion: <span className="font-semibold">{avgCompletion}%</span></span>
+        </Badge>
+      </div>
     </div>
   );
 };
