@@ -13,6 +13,8 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface DataItem {
   name: string;
@@ -41,9 +43,9 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     ? Math.round(data.reduce((sum, item) => sum + item.value, 0) / data.length) 
     : 0;
 
-  // Determine chart dimensions based on data length
+  // Determine chart width based on data length
   const getChartWidth = () => {
-    const baseWidth = range === 'weekly' ? 50 : 80; // Increased width per bar
+    const baseWidth = range === 'weekly' ? 50 : 80; // Width per bar
     return Math.max(data.length * baseWidth, 800); // Ensure minimum width
   };
 
@@ -67,20 +69,30 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     );
   };
 
+  // Handle scroll with buttons
+  const scrollChart = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 300; // Adjust scroll amount as needed
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
-    <div className="w-full flex flex-col h-full">
-      <div className="flex-grow w-full" style={{ minHeight: '240px' }}>
+    <div className="w-full flex flex-col h-full relative">
+      <div className="flex-grow w-full relative min-h-[240px] max-w-full">
         <ScrollArea className="h-full">
           <div 
             ref={scrollRef} 
             style={{ 
               width: `${getChartWidth()}px`, 
-              minWidth: '100%', 
-              height: '100%', 
               minHeight: '240px' 
             }}
+            className="relative"
           >
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={240}>
               <BarChart
                 data={data}
                 margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
@@ -122,9 +134,31 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
             </ResponsiveContainer>
           </div>
         </ScrollArea>
+        
+        {/* Scroll buttons */}
+        <div className="absolute top-1/2 left-0 -translate-y-1/2 z-10">
+          <Button 
+            variant="secondary" 
+            size="icon" 
+            className="h-8 w-8 rounded-full opacity-80 shadow-md"
+            onClick={() => scrollChart('left')}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="absolute top-1/2 right-0 -translate-y-1/2 z-10">
+          <Button 
+            variant="secondary" 
+            size="icon" 
+            className="h-8 w-8 rounded-full opacity-80 shadow-md"
+            onClick={() => scrollChart('right')}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       
-      {/* Average display below the graph instead of reference line */}
+      {/* Average display below the graph */}
       <div className="mt-2 flex items-center justify-center">
         <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
           <div 

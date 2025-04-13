@@ -1,21 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  format, 
-  isSameDay, 
-  isBefore, 
-  isAfter,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval
-} from 'date-fns';
-import { CalendarDays } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import CalendarView from '@/components/CalendarView';
+import { format, isSameDay } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
-import { useIsMobile } from '@/hooks/use-mobile';
-import MonthlyDateBar from '@/components/MonthlyDateBar';
 
 interface CalendarPageProps {
   selectedDate: Date;
@@ -25,16 +13,6 @@ interface CalendarPageProps {
   onCreateEvent: () => void;
 }
 
-interface UserData {
-  habits: any[];
-  events: any[];
-  tasks: any[];
-}
-
-interface UserSettings {
-  firstDayOfWeek: "sunday" | "monday";
-}
-
 const CalendarPage: React.FC<CalendarPageProps> = ({
   selectedDate,
   onDateSelect,
@@ -42,24 +20,31 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   onCreateOneTime,
   onCreateEvent
 }) => {
-  const [viewDate, setViewDate] = useState<Date>(selectedDate);
-  const [habits, setHabits] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [settings, setSettings] = useState<UserSettings>({ firstDayOfWeek: "sunday" });
+  const [settings, setSettings] = useState<{firstDayOfWeek: "sunday" | "monday"}>({ firstDayOfWeek: "sunday" });
   const { user } = useAuth();
-  const isMobile = useIsMobile();
 
-  const fetchUserData = () => {
+  useEffect(() => {
     if (user) {
+      // Load user data from localStorage
       const userData = localStorage.getItem(`userData_${user.id}`);
       const userSettings = localStorage.getItem(`settings_${user.id}`);
       
       if (userData) {
-        const parsedData: UserData = JSON.parse(userData);
-        setHabits(parsedData.habits || []);
-        setEvents(parsedData.events || []);
-        setTasks(parsedData.tasks || []);
+        const parsedData = JSON.parse(userData);
+        
+        // Combine habits, events, and tasks
+        const habits = parsedData.habits || [];
+        const tasks = parsedData.tasks || [];
+        const eventsData = parsedData.events || [];
+        
+        const combinedEvents = [
+          ...habits.map((habit: any) => ({ ...habit, type: 'habit' })),
+          ...tasks.map((task: any) => ({ ...task, type: 'task' })),
+          ...eventsData.map((event: any) => ({ ...event, type: 'event' }))
+        ];
+        
+        setEvents(combinedEvents);
       }
       
       if (userSettings) {
@@ -69,239 +54,99 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
         });
       }
     }
-  };
-
-  useEffect(() => {
-    fetchUserData();
-    const interval = setInterval(fetchUserData, 2000);
-    return () => clearInterval(interval);
   }, [user]);
 
-  // Process recurrence for all items
-  const processRecurrence = (items: any[], itemType: 'event' | 'task' | 'habit') => {
+  const toggleEventCompletion = (eventId: string) => {
+    if (!user) return;
+
+    const userData = localStorage.getItem(`userData_${user.id}`);
+    if (!userData) return;
+    
+    const parsedData = JSON.parse(userData);
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const monthStart = startOfMonth(viewDate);
-    const monthEnd = endOfMonth(viewDate);
     
-    const processedItems: any[] = [];
+    // Check which array contains the event
+    let updated = false;
     
-    items.forEach(item => {
-      // Add the original item with its start date for reference
-      const originalDate = new Date(item.date || item.startDate);
-      const startDate = new Date(item.date || item.startDate);
-      
-      // Don't show items that haven't started yet by checking against the original start date
-      const clonedStartDate = new Date(startDate);
-      clonedStartDate.setHours(0, 0, 0, 0);
-            
-      // Skip if it hasn't started yet or if no recurrence
-      if (!item.recurrence || item.recurrence === 'none') {
-        processedItems.push({
-          ...item,
-          date: originalDate,
-          startDate: startDate,
-          type: itemType
-        });
-        return;
-      }
-      
-      // For recurring items, generate instances within this month's view
-      let currentDate = new Date(startDate);
-      
-      while (isBefore(currentDate, monthEnd) || isSameDay(currentDate, monthEnd)) {
-        // Only add if the date is valid (after or equal to start date and in current month)
-        if ((isAfter(currentDate, clonedStartDate) || isSameDay(currentDate, clonedStartDate)) && 
-            (isBefore(currentDate, monthEnd) || isSameDay(currentDate, monthEnd)) &&
-            (isAfter(currentDate, monthStart) || isSameDay(currentDate, monthStart))) {
-          
-          processedItems.push({
-            ...item,
-            date: new Date(currentDate),
-            startDate: startDate, // Keep original start date for reference
-            type: itemType,
-            // Check if the habit is completed on this day
-            isCompleted: itemType === 'habit' ? 
-              item.completionDates?.some((d: string) => isSameDay(new Date(d), currentDate)) : 
-              item.isCompleted
-          });
+    if (parsedData.habits) {
+      const habitIndex = parsedData.habits.findIndex((h: any) => h.id === eventId);
+      if (habitIndex >= 0) {
+        const habit = parsedData.habits[habitIndex];
+        const completionDates = habit.completionDates || [];
+        
+        const todayStr = today.toISOString();
+        const alreadyCompleted = completionDates.some((dateStr: string) => 
+          isSameDay(new Date(dateStr), today)
+        );
+        
+        if (alreadyCompleted) {
+          // Remove today's date from completionDates
+          parsedData.habits[habitIndex].completionDates = completionDates.filter(
+            (dateStr: string) => !isSameDay(new Date(dateStr), today)
+          );
+          parsedData.habits[habitIndex].isCompleted = false;
+          if (parsedData.habits[habitIndex].streak > 0) {
+            parsedData.habits[habitIndex].streak -= 1;
+          }
+        } else {
+          // Add today's date to completionDates
+          completionDates.push(todayStr);
+          parsedData.habits[habitIndex].completionDates = completionDates;
+          parsedData.habits[habitIndex].isCompleted = true;
+          parsedData.habits[habitIndex].streak = (habit.streak || 0) + 1;
         }
         
-        // Calculate next occurrence based on recurrence type
-        switch (item.recurrence) {
-          case 'daily':
-            currentDate.setDate(currentDate.getDate() + 1);
-            break;
-          case 'weekly':
-            currentDate.setDate(currentDate.getDate() + 7);
-            break;
-          case 'monthly':
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            break;
-          case 'yearly':
-            currentDate.setFullYear(currentDate.getFullYear() + 1);
-            break;
-          default:
-            // For none or unspecified, don't create recurrences
-            currentDate = new Date(monthEnd);
-            currentDate.setDate(currentDate.getDate() + 1); // Exit the loop
-        }
+        updated = true;
       }
-    });
+    }
     
-    return processedItems;
-  };
-
-  // Process all items with recurrence
-  const processedEvents = processRecurrence(events, 'event');
-  const processedTasks = processRecurrence(tasks, 'task');
-  const processedHabits = processRecurrence(habits, 'habit');
-
-  // All calendar items
-  const calendarItems = [
-    ...processedEvents,
-    ...processedTasks,
-    ...processedHabits
-  ];
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setViewDate(date);
-      onDateSelect(date);
-    }
-  };
-
-  // Check if an item should be shown for a specific day
-  const itemsForDay = (day: Date) => {
-    return calendarItems.filter(item => {
-      const itemDate = new Date(item.date);
-      const startDate = item.startDate ? new Date(item.startDate) : itemDate;
-      startDate.setHours(0, 0, 0, 0);
-      day.setHours(0, 0, 0, 0);
-      
-      // Only show items that have started already
-      if (isBefore(day, startDate)) {
-        return false;
+    if (!updated && parsedData.tasks) {
+      const taskIndex = parsedData.tasks.findIndex((t: any) => t.id === eventId);
+      if (taskIndex >= 0) {
+        parsedData.tasks[taskIndex].isCompleted = !parsedData.tasks[taskIndex].isCompleted;
+        updated = true;
       }
-      
-      return isSameDay(itemDate, day);
-    });
-  };
-
-  // Determine if an item should be locked (future date)
-  const isItemLocked = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return isAfter(date, today);
-  };
-
-  // Get item type styling
-  const getItemTypeColor = (type: string, priority: string = 'medium') => {
-    if (type === 'event') {
-      return 'bg-secondary border-l-2 border-blue-400';
-    } else if (type === 'task') {
-      if (priority === 'high') {
-        return 'bg-destructive/10 border-l-2 border-destructive';
-      } else {
-        return 'bg-yellow-100 border-l-2 border-yellow-400';
-      }
-    } else {
-      return 'bg-primary/10 border-l-2 border-primary';
     }
-  };
-
-  // Display details for selected date
-  const renderSelectedDateItems = () => {
-    const items = itemsForDay(selectedDate);
-    const locked = isItemLocked(selectedDate);
-
-    return (
-      <div className="mt-6 px-4">
-        <h3 className="text-lg font-semibold mb-3">
-          Items for {format(selectedDate, 'MMMM d, yyyy')}
-        </h3>
-        <div className="space-y-2">
-          {items.length > 0 ? (
-            items.map((item) => (
-              <div
-                key={item.id}
-                className={`p-3 rounded-md ${getItemTypeColor(item.type, item.priority)} ${
-                  item.isCompleted ? 'line-through opacity-70' : 
-                  locked ? 'opacity-50' : 'cursor-pointer'
-                }`}
-              >
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">{item.title}</span>
-                  <div className="flex gap-1 items-center">
-                    {item.priority === 'high' && (
-                      <Badge variant="destructive" className="text-xs">High</Badge>
-                    )}
-                    <Badge variant="outline">{item.type}</Badge>
-                  </div>
-                </div>
-                {item.category && (
-                  <span className="text-xs text-muted-foreground block mt-1">
-                    Category: {item.category}
-                  </span>
-                )}
-                <span className="text-xs text-muted-foreground block mt-1">
-                  Priority: {item.priority || 'medium'}
-                </span>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-8 space-y-2">
-              <p className="text-lg font-medium">You are Free Today!</p>
-              <p className="text-muted-foreground">Maybe you can write a review.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    
+    if (updated) {
+      localStorage.setItem(`userData_${user.id}`, JSON.stringify(parsedData));
+      
+      // Reload events after update
+      const habits = parsedData.habits || [];
+      const tasks = parsedData.tasks || [];
+      const eventsData = parsedData.events || [];
+      
+      const combinedEvents = [
+        ...habits.map((habit: any) => ({ ...habit, type: 'habit' })),
+        ...tasks.map((task: any) => ({ ...task, type: 'task' })),
+        ...eventsData.map((event: any) => ({ ...event, type: 'event' }))
+      ];
+      
+      setEvents(combinedEvents);
+    }
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-7xl px-4">
-      <div className="mb-8">
+    <div className="container mx-auto py-6 px-4 max-w-7xl">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold">Calendar</h1>
-        <p className="text-muted-foreground">
-          View and manage your events and tasks
-        </p>
+        <p className="text-muted-foreground">View and manage your habits, tasks and events</p>
       </div>
 
-      <Card>
-        <CardContent className="p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <div className="flex items-center space-x-4">
-              <CalendarDays className="h-6 w-6" />
-              <div>
-                <h2 className="text-xl font-semibold">
-                  Calendar
-                </h2>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => handleDateSelect(new Date())}
-              >
-                Today
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-4 overflow-x-auto">
-            <MonthlyDateBar 
+      <div className="w-full overflow-hidden">
+        <ScrollArea className="w-full h-[calc(100vh-200px)]">
+          <div className="pr-4 pb-4 min-w-[320px]">
+            <CalendarView
+              events={events}
+              onDateSelect={onDateSelect}
+              onEventClick={toggleEventCompletion}
+              onAddEvent={onCreateEvent}
               selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
               firstDayOfWeek={settings.firstDayOfWeek}
-              events={calendarItems}
             />
-            {renderSelectedDateItems()}
           </div>
-        </CardContent>
-      </Card>
+        </ScrollArea>
+      </div>
     </div>
   );
 };

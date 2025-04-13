@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -112,117 +113,75 @@
   }
 }
 
-/* Responsive styles */
-@media (max-width: 640px) {
-  .container {
-    @apply px-3;
-  }
-  
-  .habit-grid {
-    @apply grid-cols-1 gap-3;
-  }
-  
-  .calendar-container {
-    @apply overflow-x-auto;
-  }
-
-  .dashboard-header {
-    @apply flex-col items-start gap-2;
-  }
-  
-  main {
-    @apply pt-16;
-  }
-  
-  /* Ensure settings tabs wrap properly on small screens */
-  .tabs-list {
-    @apply flex-wrap gap-1;
-  }
-  
-  .tabs-trigger {
-    @apply min-w-[100px] flex-1;
-  }
-
-  /* Better padding for small screens */
-  .card-content {
-    @apply p-3;
-  }
-  
-  /* Adjust font size for mobile */
-  h1 {
-    @apply text-2xl;
-  }
-  
-  h2 {
-    @apply text-xl;
-  }
-  
-  .completion-trend-container {
-    height: auto !important;
-    min-height: 250px;
-  }
+/* Responsive container styles */
+.container {
+  @apply px-4;
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-x: hidden;
 }
 
-@media (min-width: 641px) and (max-width: 768px) {
-  .habit-grid {
-    @apply grid-cols-2 gap-4;
-  }
-
-  .dashboard-header {
-    @apply flex-row items-center justify-between;
-  }
-  
-  main {
-    @apply pr-16;
-  }
-  
-  .completion-trend-container {
-    height: auto !important;
-    min-height: 300px;
-  }
+/* Universal responsive grid system */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  width: 100%;
 }
 
-@media (min-width: 769px) and (max-width: 1024px) {
-  .habit-grid {
-    @apply grid-cols-2 gap-4;
-  }
-  
-  main {
-    @apply pr-16 md:pr-64;
-  }
-  
-  .completion-trend-container {
-    height: auto !important;
-    min-height: 350px;
-  }
+/* Text truncation for all elements that might overflow */
+.truncate-text {
+  @apply truncate;
+  max-width: 100%;
 }
 
-@media (min-width: 1025px) {
-  .habit-grid {
-    @apply grid-cols-3 gap-5;
-  }
-  
-  .completion-trend-container {
-    height: auto !important;
-    min-height: 400px;
-  }
-}
-
-/* Calendar date hover effect */
-.calendar-date {
-  @apply cursor-pointer transition-all duration-200 hover:bg-primary/10 rounded-md;
-}
-
-.calendar-date.active {
-  @apply bg-primary text-primary-foreground;
-}
-
-/* Fix card appearance */
+/* Ensure all cards have proper padding and don't overflow */
 .card {
-  @apply border;
+  @apply border overflow-hidden;
 }
 
-/* Custom scrollbar */
+.card-content {
+  @apply p-3 sm:p-4 md:p-6;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Responsive typography */
+h1, h2, h3, h4, h5, h6, p, span, div {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+/* Responsive table handling */
+table {
+  @apply w-full;
+}
+
+/* Responsive scrollable areas */
+.scrollable-area {
+  @apply overflow-x-auto max-w-full;
+}
+
+/* Calendar responsiveness */
+.calendar-container {
+  @apply overflow-x-auto max-w-full;
+}
+
+/* Make all images responsive */
+img, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Button sizing adjustments for mobile */
+button, .button {
+  @apply whitespace-nowrap;
+}
+
+/* Improved scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -240,7 +199,7 @@
   @apply bg-muted-foreground/30;
 }
 
-/* Calendar styles */
+/* Help Calendar styles */
 .rdp {
   @apply !m-0;
 }
@@ -269,71 +228,53 @@
   @apply bg-accent/50;
 }
 
-/* Additional fixes for overlapping content */
-.truncate-text {
-  @apply truncate;
+/* Adaptive layout based on screen size */
+@media (max-width: 640px) {
+  .container {
+    @apply px-3;
+  }
+  
+  .dashboard-header {
+    @apply flex-col items-start gap-2;
+  }
+  
+  main {
+    @apply pt-16;
+  }
+  
+  .card-content {
+    @apply p-3;
+  }
+  
+  /* Adjust font size for mobile */
+  h1 {
+    @apply text-2xl;
+  }
+  
+  h2 {
+    @apply text-xl;
+  }
+  
+  .completion-trend-container {
+    height: auto !important;
+    min-height: 250px;
+  }
+
+  /* Ensure buttons are big enough for touch */
+  button, .button {
+    min-height: 40px;
+  }
 }
 
-/* Ensure buttons don't overlap with content */
-.button-container {
-  @apply flex flex-wrap gap-2;
-}
+/* Flexible and responsive layout breakpoints */
+@media (min-width: 641px) {
+  .dashboard-header {
+    @apply flex-row items-center justify-between;
+  }
 
-/* Fix for mobile menu button */
-.mobile-menu-button {
-  @apply fixed top-4 right-4 z-50;
-}
-
-/* Fix for reduce animations setting */
-.reduce-animations * {
-  transition: none !important;
-  transform: none !important;
-  animation: none !important;
-}
-
-/* Auth styles */
-.auth-card {
-  @apply max-w-md mx-auto;
-}
-
-/* Layout fixes */
-.content-wrapper {
-  @apply p-4 md:p-6 lg:p-8;
-}
-
-/* Switch animation fix */
-.switch-thumb {
-  transition-property: transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-/* Login page centering */
-.auth-container {
-  @apply flex items-center justify-center min-h-screen;
-}
-
-/* Sidebar spacing */
-.sidebar-menu [data-item] {
-  @apply my-2; /* Increased vertical spacing for sidebar menu items */
-}
-
-/* Solid navbar in settings */
-.settings-navbar {
-  @apply bg-card border-r min-w-max h-full whitespace-nowrap;
-}
-
-.settings-navbar a {
-  @apply block px-4 py-2 my-1 rounded-md whitespace-nowrap;
-}
-
-/* Improved completion trend graph */
-.completion-trend-container {
-  @apply w-full overflow-hidden;
-}
-
-.completion-trend-inner {
-  @apply min-w-full overflow-x-auto overflow-y-hidden;
+  .completion-trend-container {
+    height: auto !important;
+  }
 }
 
 /* Dark mode optimizations */
@@ -345,7 +286,6 @@
   @apply text-foreground font-medium;
 }
 
-/* Fix buttons in dark mode */
 .dark .bg-gray-100 {
   @apply bg-muted text-foreground;
 }
@@ -354,22 +294,55 @@
   @apply bg-muted/80;
 }
 
-/* Responsive chart fixes */
+/* Chart container styles */
+.chart-container {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ensure charts are responsive */
 .recharts-responsive-container {
-  @apply !min-h-[250px];
+  @apply !min-h-[250px] max-w-full;
 }
 
-@media (max-width: 768px) {
-  .completion-trend-inner {
-    @apply min-w-[600px];
-  }
+.recharts-wrapper {
+  max-width: 100%;
 }
 
-/* Scrollable chart container */
-.chart-scroll-container {
-  @apply w-full overflow-x-auto;
+/* Make sure badges and tags don't overflow */
+.badge, .tag {
+  @apply truncate;
+  max-width: 100%;
 }
 
-.recharts-cartesian-axis-tick-line {
-  display: none;
+/* Fix for main content area */
+main {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure sidebar is responsive */
+.sidebar {
+  @apply flex flex-col h-full;
+}
+
+/* Custom animations */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   format, 
@@ -13,7 +14,7 @@ import {
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface CalendarEvent {
   id: string;
@@ -146,74 +147,78 @@ const MonthlyDateBar: React.FC<MonthlyDateBarProps> = ({
         </Button>
       </div>
       
-      <div className="grid grid-cols-7 gap-1 text-center">
-        {daysOfWeek.map((day, index) => (
-          <div key={index} className="text-xs font-medium py-1">
-            {day}
-          </div>
-        ))}
+      <ScrollArea className="w-full">
+        <div className="min-w-[700px]">
+          <div className="grid grid-cols-7 gap-1 text-center">
+            {daysOfWeek.map((day, index) => (
+              <div key={index} className="text-xs font-medium py-1">
+                {day}
+              </div>
+            ))}
 
-        {weeks.map((week, weekIdx) => (
-          <React.Fragment key={weekIdx}>
-            {week.map((day, dayIdx) => {
-              if (!day) {
-                return <div key={`empty-${weekIdx}-${dayIdx}`} className="p-2"></div>;
-              }
-              
-              const isCurrentDay = isToday(day);
-              const isSelected = isSameDay(day, selectedDate);
-              const isInFuture = isBefore(new Date(), day);
-              const dayEvents = getEventsForDay(day);
-              
-              return (
-                <div 
-                  key={`day-${weekIdx}-${dayIdx}`}
-                  onClick={() => onDateSelect(day)}
-                  className={cn(
-                    "flex flex-col items-center p-1 rounded-md cursor-pointer transition-colors min-h-[90px]",
-                    isSelected ? "bg-primary text-primary-foreground" : 
-                    isCurrentDay ? "bg-muted" : "hover:bg-accent/50"
-                  )}
-                >
-                  <span className={cn(
-                    "text-sm rounded-full h-6 w-6 flex items-center justify-center",
-                    isInFuture ? "opacity-60" : ""
-                  )}>
-                    {day.getDate()}
-                  </span>
+            {weeks.map((week, weekIdx) => (
+              <React.Fragment key={weekIdx}>
+                {week.map((day, dayIdx) => {
+                  if (!day) {
+                    return <div key={`empty-${weekIdx}-${dayIdx}`} className="p-2"></div>;
+                  }
                   
-                  {dayEvents.length > 0 && (
-                    <div className="flex flex-col w-full mt-1 gap-1 text-left">
-                      {dayEvents.slice(0, 3).map((event, idx) => (
-                        <div 
-                          key={idx}
-                          className={cn(
-                            "text-xs truncate px-1 py-1 rounded",
-                            isSelected ? "text-primary-foreground/90" : "text-foreground",
-                            event.type === 'event' ? "bg-blue-400/10 border-l border-blue-400" : 
-                            event.type === 'task' && event.priority === 'high' ? "bg-destructive/10 border-l border-destructive" :
-                            event.type === 'task' ? "bg-yellow-400/10 border-l border-yellow-400" :
-                            "bg-primary/10 border-l border-primary",
-                            event.isCompleted && "line-through opacity-70"
+                  const isCurrentDay = isToday(day);
+                  const isSelected = isSameDay(day, selectedDate);
+                  const isInFuture = isBefore(new Date(), day);
+                  const dayEvents = getEventsForDay(day);
+                  
+                  return (
+                    <div 
+                      key={`day-${weekIdx}-${dayIdx}`}
+                      onClick={() => onDateSelect(day)}
+                      className={cn(
+                        "flex flex-col items-center p-1 rounded-md cursor-pointer transition-colors min-h-[90px]",
+                        isSelected ? "bg-primary text-primary-foreground" : 
+                        isCurrentDay ? "bg-muted" : "hover:bg-accent/50"
+                      )}
+                    >
+                      <span className={cn(
+                        "text-sm rounded-full h-6 w-6 flex items-center justify-center",
+                        isInFuture ? "opacity-60" : ""
+                      )}>
+                        {day.getDate()}
+                      </span>
+                      
+                      {dayEvents.length > 0 && (
+                        <div className="flex flex-col w-full mt-1 gap-1 text-left overflow-hidden">
+                          {dayEvents.slice(0, 3).map((event, idx) => (
+                            <div 
+                              key={idx}
+                              className={cn(
+                                "text-xs truncate px-1 py-1 rounded",
+                                isSelected ? "text-primary-foreground/90" : "text-foreground",
+                                event.type === 'event' ? "bg-blue-400/10 border-l border-blue-400" : 
+                                event.type === 'task' && event.priority === 'high' ? "bg-destructive/10 border-l border-destructive" :
+                                event.type === 'task' ? "bg-yellow-400/10 border-l border-yellow-400" :
+                                "bg-primary/10 border-l border-primary",
+                                event.isCompleted && "line-through opacity-70"
+                              )}
+                              title={event.title}
+                            >
+                              {event.title}
+                            </div>
+                          ))}
+                          {dayEvents.length > 3 && (
+                            <span className="text-[10px] text-muted-foreground text-center">
+                              +{dayEvents.length - 3} more
+                            </span>
                           )}
-                          title={event.title}
-                        >
-                          {event.title}
                         </div>
-                      ))}
-                      {dayEvents.length > 3 && (
-                        <span className="text-[10px] text-muted-foreground text-center">
-                          +{dayEvents.length - 3} more
-                        </span>
                       )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
-      </div>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      </ScrollArea>
     </div>
   );
 };
