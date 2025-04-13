@@ -29,7 +29,8 @@ import {
   isWithinInterval,
   addYears,
   subYears,
-  getYear
+  getYear,
+  addDays
 } from 'date-fns';
 
 const AnalyticsPage: React.FC = () => {
@@ -476,7 +477,7 @@ const AnalyticsPage: React.FC = () => {
           end: new Date(w.tooltip.split(' - ')[1] + `, ${selectedYear}`)
         }))?.value || 0;
       
-      stat.monthlyCompletions = stat.monthlyTrendData[now.getMonth()].completedDays || 0;
+      stat.monthlyCompletions = stat.monthlyTrendData[today.getMonth()].completedDays || 0;
       
       stat.yearlyCompletions = stat.monthlyTrendData.reduce((sum: number, month: any) => 
         sum + (month.completedDays || 0), 0);

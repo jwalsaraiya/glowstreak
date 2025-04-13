@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CalendarView from '@/components/CalendarView';
@@ -131,7 +130,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
           showAddButton={false}
           selectedDate={selectedDate}
           firstDayOfWeek={settings.firstDayOfWeek}
-          readOnly={true} // Add a readOnly prop that we'll use in CalendarView
+          readOnly={true}
         />
       </div>
     </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +30,7 @@ interface CalendarEvent {
   isCompleted?: boolean;
   startDate?: Date;
   priority?: string;
-  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'; // Add recurrence property
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 }
 
 interface CalendarViewProps {
@@ -39,7 +40,8 @@ interface CalendarViewProps {
   onAddEvent?: (date: Date) => void;
   selectedDate?: Date;
   firstDayOfWeek?: "sunday" | "monday";
-  showAddButton?: boolean; // Add property to control Add button visibility
+  showAddButton?: boolean;
+  readOnly?: boolean; // Add the readOnly prop to the interface
 }
 
 const CalendarView: React.FC<CalendarViewProps> = ({ 
@@ -49,7 +51,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   onAddEvent,
   selectedDate: propSelectedDate,
   firstDayOfWeek = "sunday",
-  showAddButton = true // Default to showing the button
+  showAddButton = true,
+  readOnly = false // Add default value
 }) => {
   const today = new Date();
   const isMobile = useIsMobile();
