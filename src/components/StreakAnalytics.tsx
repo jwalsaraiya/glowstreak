@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Flame, Sparkles, Trophy, TrendingUp } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useTheme } from '@/hooks/use-theme';
 
 interface StreakData {
   name: string;
@@ -16,6 +17,7 @@ interface StreakAnalyticsProps {
 }
 
 const StreakAnalytics: React.FC<StreakAnalyticsProps> = ({ streaks }) => {
+  const { isDarkTheme } = useTheme();
   const totalCompletionAvg = streaks.reduce((sum, streak) => sum + streak.completion, 0) / streaks.length;
   
   // Sort streaks by current streak (highest to lowest)
@@ -43,7 +45,7 @@ const StreakAnalytics: React.FC<StreakAnalyticsProps> = ({ streaks }) => {
         </div>
         
         <h3 className="font-medium text-base mb-4">All Streaks</h3>
-        <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
           {sortedStreaks.map((streak, i) => (
             <div key={i} className="space-y-2">
               <div className="flex justify-between items-center">

@@ -6,18 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import {
   CheckCheck, Clock, Flame, TrendingUp, 
   ArrowRight, ArrowUp, Zap, PieChart, Calendar,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, BarChart2
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import StreakAnalytics from '@/components/StreakAnalytics';
-import { 
-  ChartContainer, 
-  ChartTooltip, 
-  ChartTooltipContent 
-} from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useTheme } from '@/hooks/use-theme';
+import { CompletionTrendGraph } from '@/components/CompletionTrendGraph';
 import { 
   format, 
   subDays, 
@@ -38,8 +34,9 @@ import {
 
 const AnalyticsPage: React.FC = () => {
   const { user } = useAuth();
+  const { isDarkTheme } = useTheme();
   const [selectedHabit, setSelectedHabit] = useState<string | null>(null);
-  const [range, setRange] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [range, setRange] = useState<'weekly' | 'monthly'>('weekly');
   const [habits, setHabits] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -452,7 +449,7 @@ const AnalyticsPage: React.FC = () => {
               <CardHeader>
                 <div className="flex justify-between items-center flex-wrap gap-4">
                   <CardTitle className="text-xl font-semibold flex items-center">
-                    <TrendingUp className="mr-2 h-5 w-5" />
+                    <BarChart2 className="mr-2 h-5 w-5" />
                     Completion Trend
                   </CardTitle>
                   <div className="flex items-center space-x-4">
@@ -477,7 +474,7 @@ const AnalyticsPage: React.FC = () => {
                     </div>
                     <Select 
                       value={range} 
-                      onValueChange={(value: 'daily' | 'weekly' | 'monthly') => setRange(value)}
+                      onValueChange={(value: 'weekly' | 'monthly') => setRange(value)}
                     >
                       <SelectTrigger className="w-32 h-8">
                         <SelectValue placeholder="Select range" />
@@ -491,57 +488,13 @@ const AnalyticsPage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px] overflow-y-visible">
-                  <div className={`${range === 'weekly' ? 'min-w-[1200px]' : 'min-w-[700px]'} h-full overflow-x-auto`}>
-                    <ChartContainer 
-                      className="mt-4"
-                      config={{
-                        primary: {
-                          color: "#0d968b"
-                        }
-                      }}
-                    >
-                      <BarChart
-                        data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
-                        barSize={range === 'weekly' ? 35 : 50}
-                        height={250}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                        <XAxis 
-                          dataKey="name" 
-                          tick={{ fontSize: 12 }} 
-                          tickMargin={10}
-                          padding={{ left: 20, right: 20 }}
-                        />
-                        <YAxis 
-                          unit="%" 
-                          domain={[0, 100]} 
-                          tickMargin={10} 
-                          tick={{ fontSize: 12 }}
-                        />
-                        <ChartTooltip
-                          content={<ChartTooltipContent 
-                            formatter={(value) => [`${value}%`, 'Completion Rate']}
-                            labelFormatter={(label) => {
-                              const item = (range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData)
-                                .find((item: any) => item.name === label);
-                              return range === 'weekly' 
-                                ? item?.tooltip || label 
-                                : `${label}: ${item?.completedDays || 0}/${item?.totalDays || 0} days`;
-                            }}
-                          />}
-                        />
-                        <Bar
-                          dataKey="value"
-                          fill="#0d968b"
-                          radius={[4, 4, 0, 0]}
-                          className="hover:opacity-80 transition-opacity"
-                        />
-                      </BarChart>
-                    </ChartContainer>
-                  </div>
-                </div>
+                {selectedStats && (
+                  <CompletionTrendGraph 
+                    data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
+                    range={range}
+                    isDarkTheme={isDarkTheme}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
