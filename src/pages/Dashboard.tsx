@@ -358,9 +358,9 @@ const Dashboard: React.FC<DashboardProps> = ({
           
           return { 
             ...task, 
-            completedDates: isCompleted ? 
-              [...(task.completedDates || []), dateStr] : 
-              (task.completedDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
+            completionDates: isCompleted ? 
+              [...(task.completionDates || []), dateStr] : 
+              (task.completionDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
           };
         }
         return task;
@@ -456,7 +456,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               streak={itemType === 'habit' ? item.streak : 0}
               priority={item.priority || 'medium'}
               isCompleted={item.isCompleted}
-              isOneTime={item.recurrence === 'none' || itemType !== 'habit'}
+              isOneTime={false} // Always false so we show priority instead of "one time"
               disabled={item.isLocked}
               onClick={() => toggleItemCompletion(item.id, itemType)}
               onDelete={() => confirmDelete(item.id, itemType)}

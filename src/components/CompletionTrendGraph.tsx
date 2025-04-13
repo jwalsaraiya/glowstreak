@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { format, isSameWeek } from 'date-fns';
 
 interface DataItem {
   name: string;
@@ -22,6 +23,7 @@ interface DataItem {
   tooltip?: string;
   totalDays?: number;
   completedDays?: number;
+  isCurrent?: boolean;
 }
 
 interface CompletionTrendGraphProps {
@@ -36,6 +38,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   isDarkTheme
 }) => {
   const primaryColor = '#0d968b';
+  const highlightColor = '#f97316'; // Bright orange for current week
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Calculate the average completion rate
@@ -43,11 +46,11 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     ? Math.round(data.reduce((sum, item) => sum + item.value, 0) / data.length) 
     : 0;
 
-  // Determine chart width based on data length - increased spacing for better visibility
+  // Determine chart width based on data length - increased spacing for better readability
   const getChartWidth = () => {
     // Calculate width based on number of items and desired bar width
-    const barWidth = range === 'weekly' ? 40 : 60; // Thicker bars
-    const barGap = range === 'weekly' ? 30 : 40;   // More space between bars
+    const barWidth = range === 'weekly' ? 45 : 65; // Increased bar width
+    const barGap = range === 'weekly' ? 40 : 50;   // Increased space between bars
     return Math.max(data.length * (barWidth + barGap), 800); // Ensure minimum width
   };
 
@@ -67,6 +70,9 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         <p className="font-bold text-lg mt-1 text-primary">
           {payload[0].value}% <span className="text-xs font-normal text-muted-foreground">completed</span>
         </p>
+        {item.isCurrent && (
+          <p className="text-xs font-medium mt-1 text-orange-500">Current {range === 'weekly' ? 'Week' : 'Month'}</p>
+        )}
       </div>
     );
   };
@@ -81,6 +87,29 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
       });
     }
   };
+
+  // Scroll to current week/month when component loads
+  useEffect(() => {
+    if (scrollRef.current) {
+      const currentIndex = data.findIndex(item => item.isCurrent);
+      if (currentIndex !== -1) {
+        // Calculate position to scroll to (centered if possible)
+        const barWidth = range === 'weekly' ? 45 : 65;
+        const barGap = range === 'weekly' ? 40 : 50;
+        const scrollPosition = (currentIndex * (barWidth + barGap)) - (scrollRef.current.clientWidth / 2) + barWidth;
+        
+        // Add a small delay to ensure the chart has rendered
+        setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTo({
+              left: Math.max(0, scrollPosition),
+              behavior: 'smooth'
+            });
+          }
+        }, 100);
+      }
+    }
+  }, [data, range]);
 
   // Enable horizontal scrolling for touch and wheel events
   useEffect(() => {
@@ -130,18 +159,18 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
             <ResponsiveContainer width="100%" height={240}>
               <BarChart
                 data={data}
-                margin={{ top: 20, right: 20, left: 20, bottom: 40 }} // Increased bottom margin for labels
-                barCategoryGap={range === 'weekly' ? 30 : 40} // Increased gap between bars
-                barSize={range === 'weekly' ? 40 : 60} // Thicker bar size
+                margin={{ top: 20, right: 25, left: 25, bottom: 45 }} // Increased margins for better spacing
+                barCategoryGap={range === 'weekly' ? 40 : 50} // Increased gap between bars
+                barSize={range === 'weekly' ? 45 : 65} // Thicker bar size for better visibility
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkTheme ? '#33333a' : '#eee'} />
                 <XAxis 
                   dataKey="name" 
                   tick={{ fontSize: 12 }} 
-                  tickMargin={20} // Increased margin for text
+                  tickMargin={25} // Increased margin for text
                   axisLine={{ stroke: isDarkTheme ? '#33333a' : '#eee' }}
                   tickLine={false}
-                  height={40} // Increased height for X-axis
+                  height={45} // Increased height for X-axis
                   interval={0} // Show all ticks
                 />
                 <YAxis 
@@ -162,7 +191,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                   {data.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={entry.value >= avgCompletion ? primaryColor : (isDarkTheme ? '#555' : '#d4d4d8')} 
+                      fill={entry.isCurrent ? highlightColor : (entry.value >= avgCompletion ? primaryColor : (isDarkTheme ? '#555' : '#d4d4d8'))} 
                     />
                   ))}
                 </Bar>
@@ -172,13 +201,11 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         </div>
         
         {/* Add CSS to hide scrollbar but allow scrolling */}
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            .hide-scrollbar::-webkit-scrollbar {
-              display: none;
-            }
-          `
-        }} />
+        <style jsx>{`
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
         
         {/* Scroll buttons */}
         <div className="absolute top-1/2 left-0 -translate-y-1/2 z-10">
@@ -204,13 +231,21 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
       </div>
       
       {/* Average display below the graph */}
-      <div className="mt-2 flex items-center justify-center">
+      <div className="mt-2 flex items-center justify-center gap-3">
         <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
           <div 
             className="h-3 w-3 rounded-full"
             style={{ backgroundColor: primaryColor }}
           />
           <span>Average Completion: <span className="font-semibold">{avgCompletion}%</span></span>
+        </Badge>
+        
+        <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+          <div 
+            className="h-3 w-3 rounded-full"
+            style={{ backgroundColor: highlightColor }}
+          />
+          <span>Current {range === 'weekly' ? 'Week' : 'Month'}</span>
         </Badge>
       </div>
     </div>

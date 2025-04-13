@@ -30,7 +30,8 @@ import {
   addYears,
   subYears,
   getYear,
-  addDays
+  addDays,
+  isSameWeek
 } from 'date-fns';
 
 const AnalyticsPage: React.FC = () => {
@@ -353,10 +354,14 @@ const AnalyticsPage: React.FC = () => {
         const weekCompletionRate = relevantWeekDays.length > 0 ? 
           Math.round((completedDays / relevantWeekDays.length) * 100) : 0;
         
+        const isCurrentWeek = selectedYear === today.getFullYear() && 
+          isSameWeek(today, currentWeekStart, { weekStartsOn });
+        
         weeklyTrendData.push({
           name: `W${weekInYear}`,
           value: weekCompletionRate,
-          tooltip: `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`
+          tooltip: `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`,
+          isCurrent: isCurrentWeek
         });
         
         currentWeekStart = new Date(currentWeekStart);
@@ -410,11 +415,14 @@ const AnalyticsPage: React.FC = () => {
         const monthCompletionRate = relevantMonthDays.length > 0 ? 
           Math.round((completedDays / relevantMonthDays.length) * 100) : 0;
         
+        const isCurrentMonth = selectedYear === today.getFullYear() && i === today.getMonth();
+        
         monthlyTrendData.push({
           name: format(monthDate, 'MMM'),
           value: monthCompletionRate,
           totalDays: relevantMonthDays.length,
-          completedDays: completedDays
+          completedDays: completedDays,
+          isCurrent: isCurrentMonth
         });
       }
       
