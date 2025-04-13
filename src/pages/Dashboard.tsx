@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { format, isSameDay, isBefore, differenceInDays, differenceInCalendarDays, addDays } from 'date-fns';
+import { format, isSameDay, isBefore, differenceInDays, differenceInCalendarDays, addDays, isSameMonth, isSameWeek, isSameYear } from 'date-fns';
 import HabitCard from '@/components/HabitCard';
 import WeeklyDateBar from '@/components/WeeklyDateBar';
 import { Button } from '@/components/ui/button';
@@ -132,22 +133,55 @@ const Dashboard: React.FC<DashboardProps> = ({
     return streak;
   };
 
+  // Updated function that checks recurrence patterns
+  const shouldItemBeDisplayed = (item: any, selectedDate: Date) => {
+    // Get the start date of the item
+    const itemStartDate = new Date(item.startDate || item.date);
+    itemStartDate.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    // If the selected date is before the item start date, don't display it
+    if (isBefore(selectedDate, itemStartDate)) {
+      return false;
+    }
+    
+    // One-time items: only show on the exact date
+    if (item.recurrence === 'none') {
+      return isSameDay(itemStartDate, selectedDate);
+    }
+    
+    // Daily items: show every day after start date
+    if (item.recurrence === 'daily') {
+      return true;
+    }
+    
+    // Weekly items: show on the same day of week
+    if (item.recurrence === 'weekly') {
+      return itemStartDate.getDay() === selectedDate.getDay();
+    }
+    
+    // Monthly items: show on the same day of month
+    if (item.recurrence === 'monthly') {
+      return itemStartDate.getDate() === selectedDate.getDate();
+    }
+    
+    // Yearly items: show on the same month and day
+    if (item.recurrence === 'yearly') {
+      return itemStartDate.getDate() === selectedDate.getDate() && 
+             itemStartDate.getMonth() === selectedDate.getMonth();
+    }
+    
+    return false;
+  };
+
   const filterItems = (items: any[], selectedDate: Date, itemType: 'habit' | 'event' | 'task') => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     return items
       .filter(item => {
-        if (itemType === 'habit') {
-          return true;
-        } else {
-          return item.date && isSameDay(new Date(item.date), selectedDate);
-        }
-      })
-      .filter(item => {
-        const itemStartDate = new Date(item.startDate || item.date);
-        itemStartDate.setHours(0, 0, 0, 0);
-        return !isBefore(selectedDate, itemStartDate);
+        // Apply recurrence rules
+        return shouldItemBeDisplayed(item, selectedDate);
       })
       .map(item => {
         const isCompleted = itemType === 'habit' 

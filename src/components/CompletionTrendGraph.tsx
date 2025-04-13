@@ -80,12 +80,47 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     }
   };
 
+  // Enable horizontal scrolling for touch and wheel events
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (scrollRef.current && e.deltaY !== 0) {
+        // If the user is holding shift, scroll horizontally
+        if (e.shiftKey) {
+          e.preventDefault();
+          scrollRef.current.scrollBy({
+            left: e.deltaY,
+          });
+        }
+      }
+    };
+
+    const currentRef = scrollRef.current;
+    
+    if (currentRef) {
+      currentRef.addEventListener('wheel', handleWheel, { passive: false });
+    }
+    
+    return () => {
+      if (currentRef) {
+        currentRef.removeEventListener('wheel', handleWheel);
+      }
+    };
+  }, []);
+
   return (
     <div className="w-full flex flex-col h-full relative">
       <div className="flex-grow w-full relative min-h-[240px] max-w-full">
-        <ScrollArea className="h-full">
-          <div 
-            ref={scrollRef} 
+        <div 
+          ref={scrollRef}
+          className="overflow-x-auto pb-4 hide-scrollbar"
+          style={{ 
+            width: '100%', 
+            minHeight: '240px',
+            scrollbarWidth: 'none',  /* Firefox */
+            msOverflowStyle: 'none',  /* IE and Edge */
+          }}
+        >
+          <div
             style={{ 
               width: `${getChartWidth()}px`, 
               minHeight: '240px' 
@@ -133,7 +168,14 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </ScrollArea>
+        </div>
+        
+        {/* Add CSS to hide scrollbar but allow scrolling */}
+        <style jsx>{`
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
         
         {/* Scroll buttons */}
         <div className="absolute top-1/2 left-0 -translate-y-1/2 z-10">
