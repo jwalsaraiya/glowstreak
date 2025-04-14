@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -372,6 +373,10 @@ const AnalyticsPage: React.FC = () => {
       const yearStart = new Date(selectedYear, 0, 1);
       const yearEnd = new Date(selectedYear, 11, 31);
       
+      // Define effectiveYearStart and effectiveYearEnd
+      const effectiveYearStart = new Date(Math.max(startDate.getTime(), yearStart.getTime()));
+      const effectiveYearEnd = new Date(Math.min(today.getTime(), yearEnd.getTime()));
+      
       let currentWeekStart = startOfWeek(new Date(selectedYear, 0, 1), { weekStartsOn });
       while (currentWeekStart <= endOfYear(new Date(selectedYear, 0, 1))) {
         const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn });
@@ -550,7 +555,8 @@ const AnalyticsPage: React.FC = () => {
         yearlyCompletions: 0,
         weeklyTrendData,
         monthlyTrendData,
-        activeDaysInYear
+        activeDaysInYear,
+        yearlyAvgCompletion: 0 // Add this property to the returned object
       };
     });
     
