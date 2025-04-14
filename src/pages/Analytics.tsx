@@ -27,11 +27,14 @@ import {
   startOfYear, 
   endOfYear, 
   isWithinInterval,
+  addDays,
+  getYear,
+  isSameWeek,
   addYears,
   subYears,
-  getYear,
-  addDays,
-  isSameWeek
+  isAfter,
+  isBefore,
+  isSameMonth
 } from 'date-fns';
 
 const AnalyticsPage: React.FC = () => {
@@ -169,7 +172,7 @@ const AnalyticsPage: React.FC = () => {
         }
       });
       
-      const failCount = daysToConsider - successCount;
+      const failCount = relevantDays.length - successCount;
       
       let currentStreak = 0;
       
@@ -180,6 +183,8 @@ const AnalyticsPage: React.FC = () => {
           
           for (let i = 1; i < 1000; i++) {
             checkDate = subDays(checkDate, 1);
+            if (isBefore(checkDate, startDate)) break;
+            
             if (successDays.has(format(checkDate, 'yyyy-MM-dd'))) {
               currentStreak++;
             } else {
@@ -192,6 +197,8 @@ const AnalyticsPage: React.FC = () => {
           
           for (let i = 1; i < 1000; i++) {
             checkDate = subDays(checkDate, 1);
+            if (isBefore(checkDate, startDate)) break;
+            
             if (successDays.has(format(checkDate, 'yyyy-MM-dd'))) {
               currentStreak++;
             } else {
@@ -217,6 +224,8 @@ const AnalyticsPage: React.FC = () => {
               end: weekEnd
             }).find(day => day.getDay() === dayOfWeek);
             
+            if (targetDay && isBefore(targetDay, startDate)) break;
+            
             if (targetDay && successDays.has(format(targetDay, 'yyyy-MM-dd'))) {
               currentStreak++;
               currentWeekStart = subDays(currentWeekStart, 7);
@@ -240,6 +249,8 @@ const AnalyticsPage: React.FC = () => {
                 start: currentWeekStart,
                 end: weekEnd
               }).find(day => day.getDay() === dayOfWeek);
+              
+              if (targetDay && isBefore(targetDay, startDate)) break;
               
               if (targetDay && successDays.has(format(targetDay, 'yyyy-MM-dd'))) {
                 currentStreak++;
@@ -323,112 +334,11 @@ const AnalyticsPage: React.FC = () => {
         currentStreak = successDays.size > 0 ? 1 : 0;
       }
       
-      const weeklyTrendData = [];
-      const yearStart = new Date(selectedYear, 0, 1);
-      const yearEnd = new Date(selectedYear, 11, 31);
-      
-      let currentWeekStart = startOfWeek(new Date(selectedYear, 0, 1), { weekStartsOn });
-      while (currentWeekStart <= endOfYear(new Date(selectedYear, 0, 1))) {
-        const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn });
-        const weekDays = eachDayOfInterval({ 
-          start: currentWeekStart, 
-          end: weekEnd 
-        });
-        
-        const weekInYear = Math.ceil((differenceInDays(currentWeekStart, new Date(selectedYear, 0, 1)) + 1) / 7);
-        
-        let relevantWeekDays = weekDays;
-        if (recurrence === 'weekly') {
-          relevantWeekDays = weekDays.filter(day => day.getDay() === startDate.getDay());
-        } else if (recurrence === 'monthly') {
-          relevantWeekDays = weekDays.filter(day => day.getDate() === startDate.getDate());
-        } else if (recurrence === 'yearly') {
-          relevantWeekDays = weekDays.filter(day => 
-            day.getDate() === startDate.getDate() && day.getMonth() === startDate.getMonth());
-        }
-        
-        const completedDays = relevantWeekDays.filter(day => 
-          successDays.has(format(day, 'yyyy-MM-dd'))
-        ).length;
-        
-        const weekCompletionRate = relevantWeekDays.length > 0 ? 
-          Math.round((completedDays / relevantWeekDays.length) * 100) : 0;
-        
-        const isCurrentWeek = selectedYear === today.getFullYear() && 
-          isSameWeek(today, currentWeekStart, { weekStartsOn });
-        
-        weeklyTrendData.push({
-          name: `W${weekInYear}`,
-          value: weekCompletionRate,
-          tooltip: `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`,
-          isCurrent: isCurrentWeek
-        });
-        
-        currentWeekStart = new Date(currentWeekStart);
-        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-      }
-      
-      const monthlyTrendData = [];
-      for (let i = 0; i < 12; i++) {
-        const monthDate = new Date(selectedYear, i, 1);
-        const monthStart = startOfMonth(monthDate);
-        const monthEnd = endOfMonth(monthDate);
-        
-        const effectiveEndDate = selectedYear === today.getFullYear() && i >= today.getMonth() 
-          ? (i === today.getMonth() ? today : monthStart)
-          : monthEnd;
-        
-        let relevantMonthDays: Date[] = [];
-        
-        if (recurrence === 'daily') {
-          relevantMonthDays = eachDayOfInterval({ start: monthStart, end: effectiveEndDate });
-        } else if (recurrence === 'weekly') {
-          let dayOfWeek = startDate.getDay();
-          let currentDay = new Date(monthStart);
-          while (currentDay <= effectiveEndDate) {
-            if (currentDay.getDay() === dayOfWeek) {
-              relevantMonthDays.push(new Date(currentDay));
-            }
-            currentDay = addDays(currentDay, 1);
-          }
-        } else if (recurrence === 'monthly') {
-          let dayOfMonth = startDate.getDate();
-          if (dayOfMonth <= new Date(selectedYear, i+1, 0).getDate()) {
-            let targetDay = new Date(selectedYear, i, dayOfMonth);
-            if (targetDay <= effectiveEndDate) {
-              relevantMonthDays.push(targetDay);
-            }
-          }
-        } else if (recurrence === 'yearly') {
-          if (i === startDate.getMonth()) {
-            let targetDay = new Date(selectedYear, i, startDate.getDate());
-            if (targetDay <= effectiveEndDate) {
-              relevantMonthDays.push(targetDay);
-            }
-          }
-        }
-        
-        const completedDays = relevantMonthDays.filter(day => 
-          successDays.has(format(day, 'yyyy-MM-dd'))
-        ).length;
-        
-        const monthCompletionRate = relevantMonthDays.length > 0 ? 
-          Math.round((completedDays / relevantMonthDays.length) * 100) : 0;
-        
-        const isCurrentMonth = selectedYear === today.getFullYear() && i === today.getMonth();
-        
-        monthlyTrendData.push({
-          name: format(monthDate, 'MMM'),
-          value: monthCompletionRate,
-          totalDays: relevantMonthDays.length,
-          completedDays: completedDays,
-          isCurrent: isCurrentMonth
-        });
-      }
-      
       let longestStreak = 0;
       if (recurrence === 'daily') {
-        const dateObjects = completionDates.map((d: string) => new Date(d))
+        const dateObjects = completionDates
+          .map((d: string) => new Date(d))
+          .filter((d: Date) => !isBefore(d, startDate))
           .sort((a: Date, b: Date) => a.getTime() - b.getTime());
         
         if (dateObjects.length > 0) {
@@ -458,6 +368,172 @@ const AnalyticsPage: React.FC = () => {
         ? Math.round((successCount / relevantDays.length) * 100)
         : 0;
       
+      const weeklyTrendData = [];
+      const yearStart = new Date(selectedYear, 0, 1);
+      const yearEnd = new Date(selectedYear, 11, 31);
+      
+      let currentWeekStart = startOfWeek(new Date(selectedYear, 0, 1), { weekStartsOn });
+      while (currentWeekStart <= endOfYear(new Date(selectedYear, 0, 1))) {
+        const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn });
+        const weekDays = eachDayOfInterval({ 
+          start: currentWeekStart, 
+          end: weekEnd 
+        });
+        
+        const weekInYear = Math.ceil((differenceInDays(currentWeekStart, new Date(selectedYear, 0, 1)) + 1) / 7);
+        
+        let relevantWeekDays = [];
+        if (recurrence === 'weekly') {
+          relevantWeekDays = weekDays.filter(day => 
+            day.getDay() === startDate.getDay() && 
+            !isBefore(day, startDate) && 
+            !isAfter(day, today)
+          );
+        } else if (recurrence === 'monthly') {
+          relevantWeekDays = weekDays.filter(day => 
+            day.getDate() === startDate.getDate() && 
+            !isBefore(day, startDate) && 
+            !isAfter(day, today)
+          );
+        } else if (recurrence === 'yearly') {
+          relevantWeekDays = weekDays.filter(day => 
+            day.getDate() === startDate.getDate() && 
+            day.getMonth() === startDate.getMonth() && 
+            !isBefore(day, startDate) && 
+            !isAfter(day, today)
+          );
+        } else if (recurrence === 'daily') {
+          relevantWeekDays = weekDays.filter(day => 
+            !isBefore(day, startDate) && 
+            !isAfter(day, today)
+          );
+        }
+        
+        const completedDays = relevantWeekDays.filter(day => 
+          successDays.has(format(day, 'yyyy-MM-dd'))
+        ).length;
+        
+        const weekCompletionRate = relevantWeekDays.length > 0 ? 
+          Math.round((completedDays / relevantWeekDays.length) * 100) : 0;
+        
+        const isCurrentWeek = selectedYear === today.getFullYear() && 
+          isSameWeek(today, currentWeekStart, { weekStartsOn });
+        
+        const isFutureWeek = isAfter(currentWeekStart, today);
+        
+        weeklyTrendData.push({
+          name: `W${weekInYear}`,
+          value: isFutureWeek ? 0 : weekCompletionRate,
+          tooltip: `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`,
+          isCurrent: isCurrentWeek,
+          isFuture: isFutureWeek
+        });
+        
+        currentWeekStart = new Date(currentWeekStart);
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+      }
+      
+      const monthlyTrendData = [];
+      for (let i = 0; i < 12; i++) {
+        const monthDate = new Date(selectedYear, i, 1);
+        const monthStart = startOfMonth(monthDate);
+        const monthEnd = endOfMonth(monthDate);
+        
+        const effectiveEndDate = selectedYear === today.getFullYear() && i >= today.getMonth() 
+          ? (i === today.getMonth() ? today : monthStart)
+          : monthEnd;
+        
+        let relevantMonthDays: Date[] = [];
+        
+        if (recurrence === 'daily') {
+          relevantMonthDays = eachDayOfInterval({ start: monthStart, end: effectiveEndDate })
+            .filter(day => !isBefore(day, startDate) && !isAfter(day, today));
+        } else if (recurrence === 'weekly') {
+          let dayOfWeek = startDate.getDay();
+          let currentDay = new Date(monthStart);
+          while (currentDay <= effectiveEndDate) {
+            if (currentDay.getDay() === dayOfWeek && 
+                !isBefore(currentDay, startDate) && 
+                !isAfter(currentDay, today)) {
+              relevantMonthDays.push(new Date(currentDay));
+            }
+            currentDay = addDays(currentDay, 1);
+          }
+        } else if (recurrence === 'monthly') {
+          let dayOfMonth = startDate.getDate();
+          if (dayOfMonth <= new Date(selectedYear, i+1, 0).getDate()) {
+            let targetDay = new Date(selectedYear, i, dayOfMonth);
+            if (targetDay <= effectiveEndDate && 
+                !isBefore(targetDay, startDate) && 
+                !isAfter(targetDay, today)) {
+              relevantMonthDays.push(targetDay);
+            }
+          }
+        } else if (recurrence === 'yearly') {
+          if (i === startDate.getMonth()) {
+            let targetDay = new Date(selectedYear, i, startDate.getDate());
+            if (targetDay <= effectiveEndDate && 
+                !isBefore(targetDay, startDate) && 
+                !isAfter(targetDay, today)) {
+              relevantMonthDays.push(targetDay);
+            }
+          }
+        }
+        
+        const completedDays = relevantMonthDays.filter(day => 
+          successDays.has(format(day, 'yyyy-MM-dd'))
+        ).length;
+        
+        const monthCompletionRate = relevantMonthDays.length > 0 ? 
+          Math.round((completedDays / relevantMonthDays.length) * 100) : 0;
+        
+        const isCurrentMonth = selectedYear === today.getFullYear() && i === today.getMonth();
+        const isFutureMonth = selectedYear > today.getFullYear() || 
+          (selectedYear === today.getFullYear() && i > today.getMonth());
+        
+        monthlyTrendData.push({
+          name: format(monthDate, 'MMM'),
+          value: isFutureMonth ? 0 : monthCompletionRate,
+          totalDays: relevantMonthDays.length,
+          completedDays: completedDays,
+          isCurrent: isCurrentMonth,
+          isFuture: isFutureMonth
+        });
+      }
+      
+      let activeDaysInYear = 0;
+      
+      if (recurrence === 'daily') {
+        activeDaysInYear = differenceInDays(effectiveYearEnd, effectiveYearStart) + 1;
+      } else if (recurrence === 'weekly') {
+        let dayOfWeek = startDate.getDay();
+        let countDays = 0;
+        let currentDay = new Date(effectiveYearStart);
+        while (currentDay <= effectiveYearEnd) {
+          if (currentDay.getDay() === dayOfWeek) {
+            countDays++;
+          }
+          currentDay = addDays(currentDay, 1);
+        }
+        activeDaysInYear = countDays;
+      } else if (recurrence === 'monthly') {
+        let dayOfMonth = startDate.getDate();
+        let countDays = 0;
+        for (let month = 0; month < 12; month++) {
+          const maxDaysInMonth = new Date(selectedYear, month + 1, 0).getDate();
+          if (dayOfMonth <= maxDaysInMonth) {
+            const targetDay = new Date(selectedYear, month, dayOfMonth);
+            if (!isBefore(targetDay, effectiveYearStart) && !isAfter(targetDay, effectiveYearEnd)) {
+              countDays++;
+            }
+          }
+        }
+        activeDaysInYear = countDays;
+      } else if (recurrence === 'yearly') {
+        const targetDay = new Date(selectedYear, startDate.getMonth(), startDate.getDate());
+        activeDaysInYear = !isBefore(targetDay, effectiveYearStart) && !isAfter(targetDay, effectiveYearEnd) ? 1 : 0;
+      }
+      
       return {
         id: habit.id,
         name: habit.title,
@@ -473,7 +549,8 @@ const AnalyticsPage: React.FC = () => {
         monthlyCompletions: 0,
         yearlyCompletions: 0,
         weeklyTrendData,
-        monthlyTrendData
+        monthlyTrendData,
+        activeDaysInYear
       };
     });
     
@@ -489,6 +566,12 @@ const AnalyticsPage: React.FC = () => {
       
       stat.yearlyCompletions = stat.monthlyTrendData.reduce((sum: number, month: any) => 
         sum + (month.completedDays || 0), 0);
+      
+      if (stat.activeDaysInYear > 0) {
+        stat.yearlyAvgCompletion = Math.round((stat.yearlyCompletions / stat.activeDaysInYear) * 100);
+      } else {
+        stat.yearlyAvgCompletion = 0;
+      }
     });
     
     setHabitStats(statsArray);
@@ -681,7 +764,7 @@ const AnalyticsPage: React.FC = () => {
                 <div className="text-4xl font-bold">{selectedStats.yearlyCompletions}</div>
                 <p className="text-sm text-muted-foreground">Days completed this year</p>
                 <Progress 
-                  value={(selectedStats.yearlyCompletions / 365) * 100} 
+                  value={(selectedStats.yearlyCompletions / selectedStats.activeDaysInYear || 1) * 100} 
                   className="h-2 mt-4"
                 />
               </CardContent>

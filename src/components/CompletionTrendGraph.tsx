@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import {
   BarChart,
@@ -23,6 +24,7 @@ interface DataItem {
   totalDays?: number;
   completedDays?: number;
   isCurrent?: boolean;
+  isFuture?: boolean;
 }
 
 interface CompletionTrendGraphProps {
@@ -38,15 +40,18 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
 }) => {
   const primaryColor = '#0d968b';
   const highlightColor = '#f97316'; // Bright orange for current week
+  const futureColor = '#d4d4d8'; // Light gray for future weeks/months
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  const avgCompletion = data.length 
-    ? Math.round(data.reduce((sum, item) => sum + item.value, 0) / data.length) 
+  const filteredData = data.filter(item => !item.isFuture);
+  
+  const avgCompletion = filteredData.length 
+    ? Math.round(filteredData.reduce((sum, item) => sum + item.value, 0) / filteredData.length) 
     : 0;
 
   const getChartWidth = () => {
-    const barWidth = range === 'weekly' ? 45 : 65;
-    const barGap = range === 'weekly' ? 40 : 50;
+    const barWidth = range === 'weekly' ? 55 : 75;
+    const barGap = range === 'weekly' ? 50 : 60;
     return Math.max(data.length * (barWidth + barGap), 800);
   };
 
@@ -60,13 +65,18 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         <p className="font-medium text-sm">
           {range === 'weekly' 
             ? item.tooltip || label 
-            : `${label}: ${item.completedDays || 0}/${item.totalDays || 0} days`}
+            : `${label}: ${item.isFuture ? 'Upcoming' : `${item.completedDays || 0}/${item.totalDays || 0} days`}`}
         </p>
-        <p className="font-bold text-lg mt-1 text-primary">
-          {payload[0].value}% <span className="text-xs font-normal text-muted-foreground">completed</span>
-        </p>
+        {!item.isFuture && (
+          <p className="font-bold text-lg mt-1 text-primary">
+            {payload[0].value}% <span className="text-xs font-normal text-muted-foreground">completed</span>
+          </p>
+        )}
         {item.isCurrent && (
           <p className="text-xs font-medium mt-1 text-orange-500">Current {range === 'weekly' ? 'Week' : 'Month'}</p>
+        )}
+        {item.isFuture && (
+          <p className="text-xs font-medium mt-1 text-muted-foreground">Upcoming {range === 'weekly' ? 'Week' : 'Month'}</p>
         )}
       </div>
     );
@@ -86,8 +96,8 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     if (scrollRef.current) {
       const currentIndex = data.findIndex(item => item.isCurrent);
       if (currentIndex !== -1) {
-        const barWidth = range === 'weekly' ? 45 : 65;
-        const barGap = range === 'weekly' ? 40 : 50;
+        const barWidth = range === 'weekly' ? 55 : 75;
+        const barGap = range === 'weekly' ? 50 : 60;
         const scrollPosition = (currentIndex * (barWidth + barGap)) - (scrollRef.current.clientWidth / 2) + barWidth;
         
         setTimeout(() => {
@@ -149,8 +159,8 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
               <BarChart
                 data={data}
                 margin={{ top: 20, right: 25, left: 25, bottom: 45 }}
-                barCategoryGap={range === 'weekly' ? 40 : 50}
-                barSize={range === 'weekly' ? 45 : 65}
+                barCategoryGap={range === 'weekly' ? 50 : 60}
+                barSize={range === 'weekly' ? 55 : 75}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkTheme ? '#33333a' : '#eee'} />
                 <XAxis 
@@ -180,7 +190,11 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                   {data.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={entry.isCurrent ? highlightColor : (entry.value >= avgCompletion ? primaryColor : (isDarkTheme ? '#555' : '#d4d4d8'))} 
+                      fill={entry.isFuture 
+                        ? futureColor 
+                        : (entry.isCurrent 
+                            ? highlightColor 
+                            : (entry.value >= avgCompletion ? primaryColor : (isDarkTheme ? '#555' : '#d4d4d8')))} 
                     />
                   ))}
                 </Bar>
@@ -232,6 +246,14 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
             style={{ backgroundColor: highlightColor }}
           />
           <span>Current {range === 'weekly' ? 'Week' : 'Month'}</span>
+        </Badge>
+        
+        <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+          <div 
+            className="h-3 w-3 rounded-full"
+            style={{ backgroundColor: futureColor }}
+          />
+          <span>Upcoming</span>
         </Badge>
       </div>
     </div>
