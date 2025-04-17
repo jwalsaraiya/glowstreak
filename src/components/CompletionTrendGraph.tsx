@@ -10,13 +10,12 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
-import { useTheme } from '@/hooks/use-theme';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, getYear } from 'date-fns';
 
 interface DataItem {
   name: string;
@@ -35,14 +34,23 @@ interface CompletionTrendGraphProps {
 }
 
 export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
-  data,
-  range,
+  data: initialData,
+  range: initialRange,
   isDarkTheme
 }) => {
+  const [range, setRange] = useState<'weekly' | 'monthly'>(initialRange);
+  const [year, setYear] = useState<number>(getYear(new Date()));
+  const [data, setData] = useState<DataItem[]>(initialData);
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Colors
   const primaryColor = '#0d968b';
   const highlightColor = '#f97316'; // Bright orange for current week/month
   const futureColor = '#d4d4d8'; // Light gray for future weeks/months
+  
+  // Generate years for dropdown (5 years back, current year, 5 years ahead)
+  const currentYear = getYear(new Date());
+  const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
   
   // Filter out future data and calculate average completion
   const filteredData = data.filter(item => !item.isFuture);
@@ -51,13 +59,14 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     ? Math.round(filteredData.reduce((sum, item) => sum + item.value, 0) / filteredData.length) 
     : 0;
 
+  // Calculate chart width based on data length and view type
   const getChartWidth = () => {
     const barWidth = range === 'weekly' ? 55 : 75;
     const barGap = range === 'weekly' ? 50 : 60;
     return Math.max(data.length * (barWidth + barGap), 800);
   };
 
-  // Custom tooltip component
+  // Custom tooltip component for displaying data on hover
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) return null;
     
@@ -85,7 +94,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     );
   };
 
-  // Scroll left or right
+  // Handle scrolling left or right within the chart
   const scrollChart = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const scrollAmount = 300;
@@ -93,6 +102,18 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
+    }
+  };
+  
+  // Handle year change
+  const handleYearChange = (selectedYear: string) => {
+    setYear(parseInt(selectedYear));
+  };
+  
+  // Handle range (weekly/monthly) change
+  const handleRangeChange = (value: string) => {
+    if (value === 'weekly' || value === 'monthly') {
+      setRange(value);
     }
   };
 
@@ -141,9 +162,65 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     };
   }, []);
 
+  // Update data when props change
+  useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
+
   return (
     <div className="w-full flex flex-col h-full relative">
-      <div className="flex-grow w-full relative min-h-[240px] max-w-full">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <ToggleGroup type="single" value={range} onValueChange={handleRangeChange}>
+            <ToggleGroupItem value="weekly" aria-label="Weekly view">
+              Weekly
+            </ToggleGroupItem>
+            <ToggleGroupItem value="monthly" aria-label="Monthly view">
+              Monthly
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setYear(prev => Math.max(prev - 1, yearOptions[0]))}
+            className="h-9 w-9"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <Select value={year.toString()} onValueChange={handleYearChange}>
+            <SelectTrigger className="w-[110px]">
+              <SelectValue>
+                <div className="flex items-center">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  <span>{year}</span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map(yearOption => (
+                <SelectItem key={yearOption} value={yearOption.toString()}>
+                  {yearOption}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setYear(prev => Math.min(prev + 1, yearOptions[yearOptions.length - 1]))}
+            className="h-9 w-9"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      
+      <div className="flex-grow w-full relative min-h-[240px] max-w-full border rounded-md">
         <div 
           ref={scrollRef}
           className="overflow-x-auto pb-4 hide-scrollbar"

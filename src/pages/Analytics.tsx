@@ -1,13 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   CheckCheck, Clock, Flame, TrendingUp, 
-  ArrowRight, ArrowUp, Zap, PieChart, Calendar,
-  ChevronLeft, ChevronRight
+  ArrowRight, ArrowUp, Zap, PieChart, Calendar
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/use-auth';
@@ -36,6 +33,11 @@ import {
   isBefore,
   isSameMonth
 } from 'date-fns';
+import { CompletionTrendGraph } from '@/components/CompletionTrendGraph';
+
+const getWeekStartsOn = (day: "sunday" | "monday"): 0 | 1 => {
+  return day === "sunday" ? 0 : 1;
+};
 
 const AnalyticsPage: React.FC = () => {
   const { user } = useAuth();
@@ -45,12 +47,8 @@ const AnalyticsPage: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [habitStats, setHabitStats] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
   const [settings, setSettings] = useState<{firstDayOfWeek: "sunday" | "monday"}>({ firstDayOfWeek: "sunday" });
-
-  // Helper function to convert string day to numeric day
-  const getWeekStartsOn = (day: "sunday" | "monday"): 0 | 1 => {
-    return day === "sunday" ? 0 : 1;
-  };
 
   const currentYear = new Date().getFullYear();
 
@@ -649,18 +647,6 @@ const AnalyticsPage: React.FC = () => {
         </Card>
       </div>
 
-      {selectedHabit && (
-        <div className="mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-lg font-medium text-center">
-                {currentYear} Analytics
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {selectedStats && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -732,6 +718,23 @@ const AnalyticsPage: React.FC = () => {
             </Card>
           </div>
 
+          {selectedStats && (
+            <div className="mb-8">
+              <Card className="mb-6">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-xl font-semibold">Completion Trend</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <CompletionTrendGraph 
+                    data={viewMode === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
+                    range={viewMode}
+                    isDarkTheme={isDarkTheme}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {habitStats.length > 0 && (
             <div className="mb-8">
               <StreakAnalytics
@@ -751,4 +754,3 @@ const AnalyticsPage: React.FC = () => {
 };
 
 export default AnalyticsPage;
-
