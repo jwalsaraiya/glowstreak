@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import {
   BarChart,
@@ -59,14 +58,14 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     : 0;
 
   // Fixed dimensions for consistent bar sizing
-  const barWidth = range === 'weekly' ? 40 : 60;
+  const barWidth = range === 'weekly' ? 40 : 70;
   const barGap = 8;
 
   // Calculate the total width needed for all bars with consistent spacing
   const calculateChartWidth = () => {
-    const totalBars = data.filter(item => !item.isFuture).length;
-    const padding = 50; // Extra padding at the beginning and end
-    return Math.max((barWidth + (barGap * 5)) * totalBars + padding, 800);
+    const totalBars = range === 'weekly' ? 52 : 12;
+    const padding = 50; // Extra padding at beginning and end
+    return Math.max((barWidth + barGap) * totalBars + padding, 800);
   };
 
   // Custom tooltip component
@@ -122,7 +121,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     if (scrollRef.current) {
       const currentIndex = data.findIndex(item => item.isCurrent);
       if (currentIndex !== -1) {
-        const scrollPosition = (currentIndex * (barWidth + (barGap * 5))) - 200;
+        const scrollPosition = (currentIndex * (barWidth + barGap)) - 200;
         
         setTimeout(() => {
           if (scrollRef.current) {
@@ -138,8 +137,19 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
 
   // Update data when props change
   useEffect(() => {
-    setData(initialData);
-  }, [initialData]);
+    const formattedData = initialData.map(item => {
+      const name = range === 'weekly' 
+        ? item.name
+        : item.name.replace(/^W\d+$/, `M${parseInt(item.name.substring(1))}`);
+      
+      return {
+        ...item,
+        name
+      };
+    });
+    
+    setData(formattedData);
+  }, [initialData, range]);
 
   return (
     <div className="w-full flex flex-col h-full relative">
@@ -215,7 +225,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                 margin={{ top: 20, right: 30, left: 30, bottom: 40 }}
                 barSize={barWidth}
                 barGap={barGap}
-                barCategoryGap={barGap * 4}
+                barCategoryGap={barGap}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkTheme ? '#33333a' : '#eee'} />
                 <XAxis 
@@ -277,7 +287,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         </div>
       </div>
       
-      <div className="mt-3 flex items-center justify-center gap-3">
+      <div className="mt-3 flex items-center justify-center">
         <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
           <div 
             className="h-3 w-3 rounded-full"
@@ -286,7 +296,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
           <span>Average Completion: <span className="font-semibold">{avgCompletion}%</span></span>
         </Badge>
         
-        <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+        <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 text-sm ml-3">
           <div 
             className="h-3 w-3 rounded-full"
             style={{ backgroundColor: highlightColor }}

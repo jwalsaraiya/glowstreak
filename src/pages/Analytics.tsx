@@ -580,6 +580,13 @@ const AnalyticsPage: React.FC = () => {
       } else {
         stat.yearlyAvgCompletion = 0;
       }
+      
+      if (stat.monthlyTrendData) {
+        stat.monthlyTrendData = stat.monthlyTrendData.map((item: any, index: number) => ({
+          ...item,
+          name: `M${index + 1}`
+        }));
+      }
     });
     
     setHabitStats(statsArray);
