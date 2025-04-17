@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -643,31 +644,32 @@ const AnalyticsPage: React.FC = () => {
 
       {selectedHabit && (
         <div className="mb-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedYear(prev => prev - 1)}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" /> Previous Year
-              </Button>
-              
-              <div className="text-lg font-medium">{selectedYear}</div>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedYear(prev => prev + 1)}
-                disabled={selectedYear >= new Date().getFullYear()}
-              >
-                Next Year <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedYear(prev => prev - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous Year
+                </Button>
+                
+                <div className="text-lg font-medium">{selectedYear}</div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedYear(prev => prev + 1)}
+                  disabled={selectedYear >= new Date().getFullYear()}
+                >
+                  Next Year <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {selectedStats && (
         <>
