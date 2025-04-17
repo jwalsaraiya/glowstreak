@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CalendarView from '@/components/CalendarView';
 import { format, isSameDay, isSameMonth, isSameWeek, isSameYear, isBefore } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 
 interface CalendarPageProps {
   selectedDate: Date;
@@ -22,6 +24,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   const [events, setEvents] = useState<any[]>([]);
   const [settings, setSettings] = useState<{firstDayOfWeek: "sunday" | "monday"}>({ firstDayOfWeek: "sunday" });
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -38,14 +41,29 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
         const eventsData = parsedData.events || [];
         
         const combinedEvents = [
-          ...habits.map((habit: any) => ({ ...habit, type: 'habit' })),
-          ...tasks.map((task: any) => ({ ...task, type: 'task' })),
-          ...eventsData.map((event: any) => ({ ...event, type: 'event' }))
+          ...habits.map((habit: any) => ({ 
+            ...habit, 
+            type: 'habit',
+            isCompleted: habit.completionDates?.some((date: string) => 
+              isSameDay(new Date(date), selectedDate)) || false 
+          })),
+          ...tasks.map((task: any) => ({ 
+            ...task, 
+            type: 'task',
+            isCompleted: task.completionDates?.some((date: string) => 
+              isSameDay(new Date(date), selectedDate)) || task.completedDates?.some((date: string) => 
+              isSameDay(new Date(date), selectedDate)) || false
+          })),
+          ...eventsData.map((event: any) => ({ 
+            ...event, 
+            type: 'event',
+            isCompleted: event.completionDates?.some((date: string) => 
+              isSameDay(new Date(date), selectedDate)) || event.completedDates?.some((date: string) => 
+              isSameDay(new Date(date), selectedDate)) || false
+          }))
         ];
         
-        // Filter events based on recurrence pattern
-        const processedEvents = applyRecurrenceRules(combinedEvents);
-        setEvents(processedEvents);
+        setEvents(combinedEvents);
       }
       
       if (userSettings) {
@@ -55,7 +73,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
         });
       }
     }
-  }, [user]);
+  }, [user, selectedDate]);
 
   // Function to apply recurrence rules
   const shouldItemBeDisplayed = (item: any, date: Date) => {
@@ -111,8 +129,105 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
   };
 
   const toggleEventCompletion = (eventId: string) => {
-    // This function is no longer used for calendar view
-    // but kept for potential future use
+    const eventToToggle = events.find(event => event.id === eventId);
+    
+    if (!eventToToggle) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (isBefore(today, selectedDate)) {
+      toast({
+        title: "Cannot complete future items",
+        description: "You cannot mark items as completed before their scheduled date.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Get current userData
+    const userData = localStorage.getItem(`userData_${user.id}`);
+    if (!userData) return;
+    
+    const parsedData = JSON.parse(userData);
+    const dateStr = selectedDate.toISOString();
+    
+    if (eventToToggle.type === 'habit') {
+      const updatedHabits = parsedData.habits.map((habit: any) => {
+        if (habit.id === eventId) {
+          const isCompleted = habit.completionDates?.some((d: string) => 
+            isSameDay(new Date(d), selectedDate)
+          );
+          
+          return {
+            ...habit,
+            completionDates: isCompleted ? 
+              (habit.completionDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate)) :
+              [...(habit.completionDates || []), dateStr]
+          };
+        }
+        return habit;
+      });
+      
+      parsedData.habits = updatedHabits;
+    } 
+    else if (eventToToggle.type === 'task') {
+      const updatedTasks = parsedData.tasks.map((task: any) => {
+        if (task.id === eventId) {
+          const isCompleted = task.completedDates?.some((d: string) => 
+            isSameDay(new Date(d), selectedDate)
+          );
+          
+          return {
+            ...task,
+            completedDates: isCompleted ? 
+              (task.completedDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate)) :
+              [...(task.completedDates || []), dateStr]
+          };
+        }
+        return task;
+      });
+      
+      parsedData.tasks = updatedTasks;
+    }
+    else if (eventToToggle.type === 'event') {
+      const updatedEvents = parsedData.events.map((event: any) => {
+        if (event.id === eventId) {
+          const isCompleted = event.completedDates?.some((d: string) => 
+            isSameDay(new Date(d), selectedDate)
+          );
+          
+          return {
+            ...event,
+            completedDates: isCompleted ? 
+              (event.completedDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate)) :
+              [...(event.completedDates || []), dateStr]
+          };
+        }
+        return event;
+      });
+      
+      parsedData.events = updatedEvents;
+    }
+    
+    // Save updated data
+    localStorage.setItem(`userData_${user.id}`, JSON.stringify(parsedData));
+    
+    // Update current state to reflect changes
+    setEvents(events.map(event => {
+      if (event.id === eventId) {
+        return {
+          ...event,
+          isCompleted: !event.isCompleted
+        };
+      }
+      return event;
+    }));
+    
+    toast({
+      title: "Status Updated",
+      description: "Your completion status has been updated.",
+    });
   };
 
   return (
@@ -126,11 +241,11 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
         <CalendarView
           events={events}
           onDateSelect={onDateSelect}
-          onEventClick={() => {}} // Disable toggling completion
+          onEventClick={toggleEventCompletion}
           showAddButton={false}
           selectedDate={selectedDate}
           firstDayOfWeek={settings.firstDayOfWeek}
-          readOnly={true}
+          readOnly={false}
         />
       </div>
     </div>

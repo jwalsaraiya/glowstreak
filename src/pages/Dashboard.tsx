@@ -272,15 +272,17 @@ const Dashboard: React.FC<DashboardProps> = ({
         return shouldItemBeDisplayed(item, selectedDate);
       })
       .map(item => {
-        const isCompleted = itemType === 'habit' 
-          ? item.completionDates?.some((dateStr: string) => 
-              isSameDay(new Date(dateStr), selectedDate)
-            ) || false
-          : (item.completedDates && Array.isArray(item.completedDates)) 
-            ? item.completedDates.some((dateStr: string) => 
-                isSameDay(new Date(dateStr), selectedDate)
-              ) || false
-            : false;
+        let isCompleted = false;
+        
+        if (itemType === 'habit') {
+          isCompleted = item.completionDates?.some((dateStr: string) => 
+            isSameDay(new Date(dateStr), selectedDate)
+          ) || false;
+        } else {
+          isCompleted = item.completedDates?.some((dateStr: string) => 
+            isSameDay(new Date(dateStr), selectedDate)
+          ) || false;
+        }
           
         const streak = calculateStreak(item.completionDates, itemType, item.recurrence, item.startDate);
           
@@ -318,15 +320,15 @@ const Dashboard: React.FC<DashboardProps> = ({
       setHabits(habits.map(habit => {
         if (habit.id === id) {
           const dateStr = selectedDate.toISOString();
-          const isCompleted = !habit.completionDates?.some((d: string) => 
+          const isCompleted = habit.completionDates?.some((d: string) => 
             isSameDay(new Date(d), selectedDate)
           );
           
           return { 
             ...habit, 
             completionDates: isCompleted ? 
-              [...(habit.completionDates || []), dateStr] : 
-              (habit.completionDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
+              (habit.completionDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate)) : 
+              [...(habit.completionDates || []), dateStr]
           };
         }
         return habit;
@@ -335,15 +337,15 @@ const Dashboard: React.FC<DashboardProps> = ({
       setEvents(events.map(event => {
         if (event.id === id) {
           const dateStr = selectedDate.toISOString();
-          const isCompleted = !event.completedDates?.some((d: string) => 
+          const isCompleted = event.completedDates?.some((d: string) => 
             isSameDay(new Date(d), selectedDate)
           );
           
           return { 
             ...event, 
             completedDates: isCompleted ? 
-              [...(event.completedDates || []), dateStr] : 
-              (event.completedDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
+              (event.completedDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate)) : 
+              [...(event.completedDates || []), dateStr]
           };
         }
         return event;
@@ -352,15 +354,15 @@ const Dashboard: React.FC<DashboardProps> = ({
       setTasks(tasks.map(task => {
         if (task.id === id) {
           const dateStr = selectedDate.toISOString();
-          const isCompleted = !task.completedDates?.some((d: string) => 
+          const isCompleted = task.completedDates?.some((d: string) => 
             isSameDay(new Date(d), selectedDate)
           );
           
           return { 
             ...task, 
-            completionDates: isCompleted ? 
-              [...(task.completionDates || []), dateStr] : 
-              (task.completionDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate))
+            completedDates: isCompleted ? 
+              (task.completedDates || []).filter((d: string) => !isSameDay(new Date(d), selectedDate)) : 
+              [...(task.completedDates || []), dateStr]
           };
         }
         return task;

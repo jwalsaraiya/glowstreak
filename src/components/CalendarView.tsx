@@ -177,47 +177,25 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   const getEventColors = (event: CalendarEvent) => {
     const priority = event.priority || 'medium';
     
-    switch (event.type) {
-      case 'habit':
+    switch (priority) {
+      case 'high':
         return {
-          bg: 'bg-primary/10',
-          border: 'border-primary',
+          bg: 'bg-red-100 dark:bg-red-900/30',
+          border: 'border-[#ef4343]',
           text: 'text-foreground'
         };
-      case 'task':
-        if (priority === 'high') {
-          return {
-            bg: 'bg-destructive/10',
-            border: 'border-destructive',
-            text: 'text-foreground'
-          };
-        } else if (priority === 'low') {
-          return {
-            bg: 'bg-green-100 dark:bg-green-900/30',
-            border: 'border-green-400',
-            text: 'text-foreground'
-          };
-        } else {
-          return {
-            bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-            border: 'border-yellow-400',
-            text: 'text-foreground'
-          };
-        }
-      case 'event':
-        if (priority === 'high') {
-          return {
-            bg: 'bg-blue-100 dark:bg-blue-900/30',
-            border: 'border-blue-600',
-            text: 'text-foreground'
-          };
-        } else {
-          return {
-            bg: 'bg-blue-100 dark:bg-blue-900/30',
-            border: 'border-blue-400',
-            text: 'text-foreground'
-          };
-        }
+      case 'medium':
+        return {
+          bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+          border: 'border-[#facc15]',
+          text: 'text-foreground'
+        };
+      case 'low':
+        return {
+          bg: 'bg-green-100 dark:bg-green-900/30',
+          border: 'border-[#4ade80]',
+          text: 'text-foreground'
+        };
       default:
         return {
           bg: 'bg-secondary',
@@ -302,7 +280,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                             return (
                               <Badge 
                                 key={idx}
-                                variant={event.type === 'event' ? 'secondary' : 'outline'}
+                                variant="outline"
                                 className={cn(
                                   "truncate text-xs py-1 cursor-pointer",
                                   colors.text,
@@ -312,6 +290,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                                 )}
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  if (!isLocked && onEventClick) {
+                                    handleEventClick(event.id);
+                                  }
                                 }}
                               >
                                 {event.title}
@@ -350,15 +331,23 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           colors.text,
                           event.isCompleted && !isLocked ? 'line-through opacity-70' : ''
                         )}
+                        onClick={() => {
+                          if (!readOnly && !isLocked && onEventClick) {
+                            handleEventClick(event.id);
+                          }
+                        }}
                       >
                         <div className="flex justify-between items-center">
                           <span className="font-medium">{event.title}</span>
                           <div className="flex gap-1">
                             {event.priority === 'high' && (
-                              <Badge variant="destructive">High</Badge>
+                              <Badge variant="outline" className="border-[#ef4343] bg-red-100 dark:bg-red-900/30 text-foreground">High</Badge>
+                            )}
+                            {event.priority === 'medium' && (
+                              <Badge variant="outline" className="border-[#facc15] bg-yellow-100 dark:bg-yellow-900/30 text-foreground">Medium</Badge>
                             )}
                             {event.priority === 'low' && (
-                              <Badge variant="outline" className="border-green-400 bg-green-100 dark:bg-green-900/30 text-foreground">Low</Badge>
+                              <Badge variant="outline" className="border-[#4ade80] bg-green-100 dark:bg-green-900/30 text-foreground">Low</Badge>
                             )}
                             <Badge variant="outline">{event.type}</Badge>
                           </div>
