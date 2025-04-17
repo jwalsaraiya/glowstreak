@@ -40,6 +40,7 @@ const AnalyticsPage: React.FC = () => {
   const { user } = useAuth();
   const { isDarkTheme } = useTheme();
   const [selectedHabit, setSelectedHabit] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [habits, setHabits] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -636,6 +637,34 @@ const AnalyticsPage: React.FC = () => {
                 ))}
               </SelectContent>
             </Select>
+          </CardContent>
+        </Card>
+      </div>
+
+      {selectedHabit && (
+        <div className="mb-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedYear(prev => prev - 1)}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> Previous Year
+              </Button>
+              
+              <div className="text-lg font-medium">{selectedYear}</div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedYear(prev => prev + 1)}
+                disabled={selectedYear >= new Date().getFullYear()}
+              >
+                Next Year <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
