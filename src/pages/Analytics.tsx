@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,14 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import {
   CheckCheck, Clock, Flame, TrendingUp, 
   ArrowRight, ArrowUp, Zap, PieChart, Calendar,
-  ChevronLeft, ChevronRight, BarChart2
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import StreakAnalytics from '@/components/StreakAnalytics';
 import { useTheme } from '@/hooks/use-theme';
-import { CompletionTrendGraph } from '@/components/CompletionTrendGraph';
 import { 
   format, 
   subDays, 
@@ -42,13 +40,11 @@ const AnalyticsPage: React.FC = () => {
   const { user } = useAuth();
   const { isDarkTheme } = useTheme();
   const [selectedHabit, setSelectedHabit] = useState<string | null>(null);
-  const [range, setRange] = useState<'weekly' | 'monthly'>('weekly');
   const [habits, setHabits] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [habitStats, setHabitStats] = useState<any[]>([]);
   const [settings, setSettings] = useState<{firstDayOfWeek: "sunday" | "monday"}>({ firstDayOfWeek: "sunday" });
-  const [selectedYear, setSelectedYear] = useState<number>(getYear(new Date()));
 
   useEffect(() => {
     if (user) {
@@ -373,7 +369,6 @@ const AnalyticsPage: React.FC = () => {
       const yearStart = new Date(selectedYear, 0, 1);
       const yearEnd = new Date(selectedYear, 11, 31);
       
-      // Define effectiveYearStart and effectiveYearEnd
       const effectiveYearStart = new Date(Math.max(startDate.getTime(), yearStart.getTime()));
       const effectiveYearEnd = new Date(Math.min(today.getTime(), yearEnd.getTime()));
       
@@ -556,7 +551,7 @@ const AnalyticsPage: React.FC = () => {
         weeklyTrendData,
         monthlyTrendData,
         activeDaysInYear,
-        yearlyAvgCompletion: 0 // Add this property to the returned object
+        yearlyAvgCompletion: 0
       };
     });
     
@@ -589,14 +584,6 @@ const AnalyticsPage: React.FC = () => {
   };
 
   const selectedStats = getSelectedHabitStats();
-
-  const changeYear = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
-      setSelectedYear(prevYear => prevYear - 1);
-    } else {
-      setSelectedYear(prevYear => prevYear + 1);
-    }
-  };
 
   if (!habits.length) {
     return (
@@ -724,59 +711,6 @@ const AnalyticsPage: React.FC = () => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-semibold flex items-center">
-                  <CheckCheck className="mr-2 h-5 w-5" />
-                  Weekly Completions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold">{selectedStats.weeklyCompletions}</div>
-                <p className="text-sm text-muted-foreground">Days completed this week</p>
-                <Progress 
-                  value={(selectedStats.weeklyCompletions / 7) * 100} 
-                  className="h-2 mt-4"
-                />
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-semibold flex items-center">
-                  <CheckCheck className="mr-2 h-5 w-5" />
-                  Monthly Completions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold">{selectedStats.monthlyCompletions}</div>
-                <p className="text-sm text-muted-foreground">Days completed this month</p>
-                <Progress 
-                  value={(selectedStats.monthlyCompletions / 30) * 100} 
-                  className="h-2 mt-4"
-                />
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-semibold flex items-center">
-                  <CheckCheck className="mr-2 h-5 w-5" />
-                  Yearly Completions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold">{selectedStats.yearlyCompletions}</div>
-                <p className="text-sm text-muted-foreground">Days completed this year</p>
-                <Progress 
-                  value={(selectedStats.yearlyCompletions / selectedStats.activeDaysInYear || 1) * 100} 
-                  className="h-2 mt-4"
-                />
-              </CardContent>
-            </Card>
-          </div>
-
           {habitStats.length > 0 && (
             <div className="mb-8">
               <StreakAnalytics
@@ -789,61 +723,6 @@ const AnalyticsPage: React.FC = () => {
               />
             </div>
           )}
-
-          <div className="grid grid-cols-1 gap-6 mb-8">
-            <Card className="h-[420px]">
-              <CardHeader>
-                <div className="flex justify-between items-center flex-wrap gap-4">
-                  <CardTitle className="text-xl font-semibold flex items-center">
-                    <BarChart2 className="mr-2 h-5 w-5" />
-                    Completion Trend
-                  </CardTitle>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => changeYear('prev')}
-                        className="h-8 w-8"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="mx-2 text-sm font-medium">{selectedYear}</span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => changeYear('next')}
-                        className="h-8 w-8"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Select 
-                      value={range} 
-                      onValueChange={(value: 'weekly' | 'monthly') => setRange(value)}
-                    >
-                      <SelectTrigger className="w-32 h-8">
-                        <SelectValue placeholder="Select range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="h-[calc(100%-80px)] pb-4">
-                {selectedStats && (
-                  <CompletionTrendGraph 
-                    data={range === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
-                    range={range}
-                    isDarkTheme={isDarkTheme}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </div>
         </>
       )}
     </div>
