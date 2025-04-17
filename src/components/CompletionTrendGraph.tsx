@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import {
   BarChart,
@@ -14,7 +15,7 @@ import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getYear } from 'date-fns';
+import { getYear, getWeek, startOfYear, addWeeks, format, isSameWeek, isSameMonth, isAfter, isBefore } from 'date-fns';
 
 interface DataItem {
   name: string;
@@ -40,7 +41,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   // State management
   const [range, setRange] = useState<'weekly' | 'monthly'>(initialRange);
   const [year, setYear] = useState<number>(getYear(new Date()));
-  const [data, setData] = useState<DataItem[]>(initialData);
+  const [data, setData] = useState<DataItem[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Colors
@@ -58,13 +59,13 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     : 0;
 
   // Fixed dimensions for consistent bar sizing
-  const barWidth = range === 'weekly' ? 40 : 70;
+  const barWidth = 50;
   const barGap = 8;
 
   // Calculate the total width needed for all bars with consistent spacing
   const calculateChartWidth = () => {
     const totalBars = range === 'weekly' ? 52 : 12;
-    const padding = 50; // Extra padding at beginning and end
+    const padding = 60; // Extra padding at beginning and end
     return Math.max((barWidth + barGap) * totalBars + padding, 800);
   };
 
@@ -116,6 +117,71 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     }
   };
 
+  // Generate appropriate data based on range and year
+  useEffect(() => {
+    if (range === 'weekly') {
+      // Generate weekly data for the selected year
+      const weeksInYear = 52; // Can be 52 or 53 based on the year
+      const weeklyData: DataItem[] = [];
+      
+      const yearStart = startOfYear(new Date(year, 0, 1));
+      
+      for (let i = 0; i < weeksInYear; i++) {
+        const weekDate = addWeeks(yearStart, i);
+        const weekNum = i + 1;
+        
+        // Find the corresponding data in initialData if it exists
+        const matchingData = initialData.find(item => {
+          return item.name === `W${weekNum}` || 
+            (item.tooltip && item.tooltip.includes(format(weekDate, 'MMM d')));
+        });
+        
+        const isCurrentWeek = isSameWeek(new Date(), weekDate);
+        const isFutureWeek = isAfter(weekDate, new Date());
+        
+        weeklyData.push({
+          name: `W${weekNum}`,
+          value: matchingData?.value || 0,
+          tooltip: matchingData?.tooltip || `${format(weekDate, 'MMM d')} - ${format(addWeeks(weekDate, 1), 'MMM d')}`,
+          isCurrent: isCurrentWeek,
+          isFuture: isFutureWeek
+        });
+      }
+      
+      setData(weeklyData);
+    } else {
+      // Generate monthly data
+      const monthlyData: DataItem[] = [];
+      
+      for (let i = 0; i < 12; i++) {
+        const monthDate = new Date(year, i, 1);
+        
+        // Find the corresponding data in initialData if it exists
+        const matchingData = initialData.find(item => {
+          // Check by month name (M1-M12) or by month abbreviation
+          return item.name === `M${i+1}` || 
+                (typeof item.name === 'string' && 
+                 item.name === format(monthDate, 'MMM'));
+        });
+        
+        const isCurrentMonth = isSameMonth(new Date(), monthDate);
+        const isFutureMonth = isAfter(monthDate, new Date()) && 
+                             (year >= getYear(new Date()));
+        
+        monthlyData.push({
+          name: `M${i+1}`,
+          value: (!isFutureMonth && matchingData?.value) ? matchingData.value : 0,
+          totalDays: matchingData?.totalDays || 0,
+          completedDays: matchingData?.completedDays || 0,
+          isCurrent: isCurrentMonth,
+          isFuture: isFutureMonth
+        });
+      }
+      
+      setData(monthlyData);
+    }
+  }, [initialData, range, year]);
+
   // Auto-scroll to current week/month when the component mounts or data changes
   useEffect(() => {
     if (scrollRef.current) {
@@ -131,25 +197,22 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
             });
           }
         }, 100);
+      } else if (year === currentYear) {
+        // If no current item but we're in current year, scroll to appropriate position
+        const targetIndex = range === 'weekly' ? getWeek(new Date()) - 1 : new Date().getMonth();
+        const scrollPosition = (targetIndex * (barWidth + barGap)) - 200;
+        
+        setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTo({
+              left: Math.max(0, scrollPosition),
+              behavior: 'smooth'
+            });
+          }
+        }, 100);
       }
     }
-  }, [data, range, barWidth]);
-
-  // Update data when props change
-  useEffect(() => {
-    const formattedData = initialData.map(item => {
-      const name = range === 'weekly' 
-        ? item.name
-        : item.name.replace(/^W\d+$/, `M${parseInt(item.name.substring(1))}`);
-      
-      return {
-        ...item,
-        name
-      };
-    });
-    
-    setData(formattedData);
-  }, [initialData, range]);
+  }, [data, range, barWidth, year, currentYear]);
 
   return (
     <div className="w-full flex flex-col h-full relative">

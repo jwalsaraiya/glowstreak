@@ -498,7 +498,7 @@ const AnalyticsPage: React.FC = () => {
           (currentYear === new Date().getFullYear() && i > new Date().getMonth());
         
         monthlyTrendData.push({
-          name: format(monthDate, 'MMM'),
+          name: `M${i+1}`,
           value: isFutureMonth ? 0 : monthCompletionRate,
           totalDays: relevantMonthDays.length,
           completedDays: completedDays,
@@ -579,13 +579,6 @@ const AnalyticsPage: React.FC = () => {
         stat.yearlyAvgCompletion = Math.round((stat.yearlyCompletions / stat.activeDaysInYear) * 100);
       } else {
         stat.yearlyAvgCompletion = 0;
-      }
-      
-      if (stat.monthlyTrendData) {
-        stat.monthlyTrendData = stat.monthlyTrendData.map((item: any, index: number) => ({
-          ...item,
-          name: `M${index + 1}`
-        }));
       }
     });
     
