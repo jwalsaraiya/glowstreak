@@ -15,7 +15,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { format, isSameWeek } from 'date-fns';
+import { format } from 'date-fns';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 
 interface DataItem {
   name: string;
@@ -38,11 +39,12 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   range,
   isDarkTheme
 }) => {
-  const primaryColor = '#0d968b';
-  const highlightColor = '#f97316'; // Bright orange for current week
-  const futureColor = '#d4d4d8'; // Light gray for future weeks/months
   const scrollRef = useRef<HTMLDivElement>(null);
+  const primaryColor = '#0d968b';
+  const highlightColor = '#f97316'; // Bright orange for current week/month
+  const futureColor = '#d4d4d8'; // Light gray for future weeks/months
   
+  // Filter out future data and calculate average completion
   const filteredData = data.filter(item => !item.isFuture);
   
   const avgCompletion = filteredData.length 
@@ -55,6 +57,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     return Math.max(data.length * (barWidth + barGap), 800);
   };
 
+  // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) return null;
     
@@ -82,6 +85,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     );
   };
 
+  // Scroll left or right
   const scrollChart = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const scrollAmount = 300;
@@ -92,6 +96,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     }
   };
 
+  // Auto-scroll to current week/month when the component mounts or data changes
   useEffect(() => {
     if (scrollRef.current) {
       const currentIndex = data.findIndex(item => item.isCurrent);
@@ -112,6 +117,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     }
   }, [data, range]);
 
+  // Enable horizontal scrolling with mousewheel
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       if (scrollRef.current && e.deltaY !== 0) {
@@ -194,7 +200,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                         ? futureColor 
                         : (entry.isCurrent 
                             ? highlightColor 
-                            : (entry.value >= avgCompletion ? primaryColor : (isDarkTheme ? '#555' : '#d4d4d8')))} 
+                            : primaryColor)} 
                     />
                   ))}
                 </Bar>
