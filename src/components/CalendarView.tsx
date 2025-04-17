@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +40,7 @@ interface CalendarViewProps {
   selectedDate?: Date;
   firstDayOfWeek?: "sunday" | "monday";
   showAddButton?: boolean;
-  readOnly?: boolean; // Add the readOnly prop to the interface
+  readOnly?: boolean;
 }
 
 const CalendarView: React.FC<CalendarViewProps> = ({ 
@@ -52,9 +51,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   selectedDate: propSelectedDate,
   firstDayOfWeek = "sunday",
   showAddButton = true,
-  readOnly = false // Add default value
+  readOnly = false
 }) => {
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const isMobile = useIsMobile();
   const [selectedDate, setSelectedDate] = useState<Date>(propSelectedDate || today);
   const [viewDate, setViewDate] = useState<Date>(propSelectedDate || today);
@@ -68,9 +68,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   const handleEventClick = (eventId: string) => {
-    // We're disabling event clicking for marking completion
-    // but keeping the function in case we need it for other purposes like viewing details
-    // if (onEventClick) onEventClick(eventId);
+    if (onEventClick && !readOnly) onEventClick(eventId);
   };
 
   const changeMonth = (direction: 'prev' | 'next') => {
@@ -87,40 +85,32 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     return days;
   };
 
-  // Updated function to check if an event should be displayed on a specific date
   const shouldEventBeDisplayed = (event: CalendarEvent, date: Date) => {
-    // Get the start date of the event
     const eventStartDate = new Date(event.startDate || event.date);
     eventStartDate.setHours(0, 0, 0, 0);
     const checkDate = new Date(date);
     checkDate.setHours(0, 0, 0, 0);
     
-    // If the date is before the event start date, don't display it
     if (isBefore(checkDate, eventStartDate)) {
       return false;
     }
     
-    // One-time events: only show on the exact date
     if (event.recurrence === 'none' || !event.recurrence) {
       return isSameDay(eventStartDate, checkDate);
     }
     
-    // Daily events: show every day after start date
     if (event.recurrence === 'daily') {
       return true;
     }
     
-    // Weekly events: show on the same day of week
     if (event.recurrence === 'weekly') {
       return eventStartDate.getDay() === checkDate.getDay();
     }
     
-    // Monthly events: show on the same day of month
     if (event.recurrence === 'monthly') {
       return eventStartDate.getDate() === checkDate.getDate();
     }
     
-    // Yearly events: show on the same month and day
     if (event.recurrence === 'yearly') {
       return eventStartDate.getDate() === checkDate.getDate() && 
              eventStartDate.getMonth() === checkDate.getMonth();
@@ -133,14 +123,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     return events.filter(event => shouldEventBeDisplayed(event, date));
   };
 
-  const isEventLocked = (event: CalendarEvent) => {
+  const isEventLocked = (event: CalendarEvent, date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const eventDate = new Date(event.date);
-    eventDate.setHours(0, 0, 0, 0);
-    
-    return isBefore(today, eventDate);
+    return isBefore(today, date);
   };
 
   const organizeDaysIntoWeeks = () => {
@@ -187,8 +174,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     });
   };
 
-  // Get background and text colors based on event type
   const getEventColors = (event: CalendarEvent) => {
+    const priority = event.priority || 'medium';
+    
     switch (event.type) {
       case 'habit':
         return {
@@ -197,23 +185,39 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           text: 'text-foreground'
         };
       case 'task':
-        return event.priority === 'high' 
-          ? {
-              bg: 'bg-destructive/10',
-              border: 'border-destructive',
-              text: 'text-foreground'
-            }
-          : {
-              bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-              border: 'border-yellow-400',
-              text: 'text-foreground'
-            };
+        if (priority === 'high') {
+          return {
+            bg: 'bg-destructive/10',
+            border: 'border-destructive',
+            text: 'text-foreground'
+          };
+        } else if (priority === 'low') {
+          return {
+            bg: 'bg-green-100 dark:bg-green-900/30',
+            border: 'border-green-400',
+            text: 'text-foreground'
+          };
+        } else {
+          return {
+            bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+            border: 'border-yellow-400',
+            text: 'text-foreground'
+          };
+        }
       case 'event':
-        return {
-          bg: 'bg-blue-100 dark:bg-blue-900/30',
-          border: 'border-blue-400',
-          text: 'text-foreground'
-        };
+        if (priority === 'high') {
+          return {
+            bg: 'bg-blue-100 dark:bg-blue-900/30',
+            border: 'border-blue-600',
+            text: 'text-foreground'
+          };
+        } else {
+          return {
+            bg: 'bg-blue-100 dark:bg-blue-900/30',
+            border: 'border-blue-400',
+            text: 'text-foreground'
+          };
+        }
       default:
         return {
           bg: 'bg-secondary',
@@ -276,7 +280,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                     const dateEvents = getEventsForDate(date);
                     const isCurrentDay = isSameDay(date, new Date());
                     const isSelected = isSameDay(date, selectedDate);
-                    const isInFuture = isBefore(new Date(), date);
+                    const isInFuture = isBefore(today, date);
 
                     return (
                       <div 
@@ -294,6 +298,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                         <div className="flex flex-col gap-1 max-h-[80px] overflow-y-auto">
                           {dateEvents.slice(0, 3).map((event, idx) => {
                             const colors = getEventColors(event);
+                            const isLocked = isEventLocked(event, date);
                             return (
                               <Badge 
                                 key={idx}
@@ -301,14 +306,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                                 className={cn(
                                   "truncate text-xs py-1 cursor-pointer",
                                   colors.text,
-                                  event.isCompleted ? "opacity-70 line-through" : "",
-                                  isEventLocked(event) ? "opacity-50" : "",
+                                  event.isCompleted && !isLocked ? "opacity-70 line-through" : "",
+                                  isLocked ? "opacity-50" : "",
                                   `border-l-2 ${colors.border}`
                                 )}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // We're now disabling event clicks for completion
-                                  // but keeping the onClick handler for future use
                                 }}
                               >
                                 {event.title}
@@ -336,6 +339,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                 {selectedDateEvents.length > 0 ? (
                   selectedDateEvents.map((event) => {
                     const colors = getEventColors(event);
+                    const isLocked = isEventLocked(event, selectedDate);
                     return (
                       <div
                         key={event.id}
@@ -344,7 +348,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           colors.bg,
                           `border-l-2 ${colors.border}`,
                           colors.text,
-                          event.isCompleted ? 'line-through opacity-70' : ''
+                          event.isCompleted && !isLocked ? 'line-through opacity-70' : ''
                         )}
                       >
                         <div className="flex justify-between items-center">
@@ -352,6 +356,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           <div className="flex gap-1">
                             {event.priority === 'high' && (
                               <Badge variant="destructive">High</Badge>
+                            )}
+                            {event.priority === 'low' && (
+                              <Badge variant="outline" className="border-green-400 bg-green-100 dark:bg-green-900/30 text-foreground">Low</Badge>
                             )}
                             <Badge variant="outline">{event.type}</Badge>
                           </div>
