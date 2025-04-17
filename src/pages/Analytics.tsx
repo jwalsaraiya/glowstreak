@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -45,6 +46,11 @@ const AnalyticsPage: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [habitStats, setHabitStats] = useState<any[]>([]);
   const [settings, setSettings] = useState<{firstDayOfWeek: "sunday" | "monday"}>({ firstDayOfWeek: "sunday" });
+
+  // Helper function to convert string day to numeric day
+  const getWeekStartsOn = (day: "sunday" | "monday"): 0 | 1 => {
+    return day === "sunday" ? 0 : 1;
+  };
 
   const currentYear = new Date().getFullYear();
 
@@ -205,17 +211,18 @@ const AnalyticsPage: React.FC = () => {
         }
       } else if (recurrence === 'weekly') {
         const dayOfWeek = startDate.getDay();
+        const weekStartsOn = getWeekStartsOn(settings.firstDayOfWeek);
         const thisWeekDay = eachDayOfInterval({
-          start: startOfWeek(new Date(), { weekStartsOn: settings.firstDayOfWeek }),
-          end: endOfWeek(new Date(), { weekStartsOn: settings.firstDayOfWeek })
+          start: startOfWeek(new Date(), { weekStartsOn }),
+          end: endOfWeek(new Date(), { weekStartsOn })
         }).find(day => day.getDay() === dayOfWeek);
         
         if (thisWeekDay && successDays.has(format(thisWeekDay, 'yyyy-MM-dd'))) {
           currentStreak = 1;
-          let currentWeekStart = subDays(startOfWeek(new Date(), { weekStartsOn: settings.firstDayOfWeek }), 7);
+          let currentWeekStart = subDays(startOfWeek(new Date(), { weekStartsOn }), 7);
           
           for (let i = 1; i < 52; i++) {
-            const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: settings.firstDayOfWeek });
+            const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn });
             const targetDay = eachDayOfInterval({
               start: currentWeekStart,
               end: weekEnd
@@ -232,16 +239,16 @@ const AnalyticsPage: React.FC = () => {
           }
         } else if (isSameDay(new Date(), thisWeekDay || new Date()) === false) {
           const lastWeekDay = eachDayOfInterval({
-            start: startOfWeek(subDays(new Date(), 7), { weekStartsOn: settings.firstDayOfWeek }),
-            end: endOfWeek(subDays(new Date(), 7), { weekStartsOn: settings.firstDayOfWeek })
+            start: startOfWeek(subDays(new Date(), 7), { weekStartsOn }),
+            end: endOfWeek(subDays(new Date(), 7), { weekStartsOn })
           }).find(day => day.getDay() === dayOfWeek);
           
           if (lastWeekDay && successDays.has(format(lastWeekDay, 'yyyy-MM-dd'))) {
             currentStreak = 1;
-            let currentWeekStart = subDays(startOfWeek(subDays(new Date(), 7), { weekStartsOn: settings.firstDayOfWeek }), 7);
+            let currentWeekStart = subDays(startOfWeek(subDays(new Date(), 7), { weekStartsOn }), 7);
             
             for (let i = 1; i < 52; i++) {
-              const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: settings.firstDayOfWeek });
+              const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn });
               const targetDay = eachDayOfInterval({
                 start: currentWeekStart,
                 end: weekEnd
@@ -372,9 +379,10 @@ const AnalyticsPage: React.FC = () => {
       const effectiveYearStart = new Date(Math.max(startDate.getTime(), yearStart.getTime()));
       const effectiveYearEnd = new Date(Math.min(new Date().getTime(), yearEnd.getTime()));
       
-      let currentWeekStart = startOfWeek(new Date(currentYear, 0, 1), { weekStartsOn: settings.firstDayOfWeek });
+      const weekStartsOn = getWeekStartsOn(settings.firstDayOfWeek);
+      let currentWeekStart = startOfWeek(new Date(currentYear, 0, 1), { weekStartsOn });
       while (currentWeekStart <= endOfYear(new Date(currentYear, 0, 1))) {
-        const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: settings.firstDayOfWeek });
+        const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn });
         const weekDays = eachDayOfInterval({ 
           start: currentWeekStart, 
           end: weekEnd 
@@ -417,7 +425,7 @@ const AnalyticsPage: React.FC = () => {
           Math.round((completedDays / relevantWeekDays.length) * 100) : 0;
         
         const isCurrentWeek = currentYear === new Date().getFullYear() && 
-          isSameWeek(new Date(), currentWeekStart, { weekStartsOn: settings.firstDayOfWeek });
+          isSameWeek(new Date(), currentWeekStart, { weekStartsOn });
         
         const isFutureWeek = isAfter(currentWeekStart, new Date());
         
@@ -556,7 +564,8 @@ const AnalyticsPage: React.FC = () => {
     });
     
     statsArray.forEach(stat => {
-      const weekStart = startOfWeek(new Date(currentYear), { weekStartsOn: settings.firstDayOfWeek });
+      const weekStartsOn = getWeekStartsOn(settings.firstDayOfWeek);
+      const weekStart = startOfWeek(new Date(currentYear), { weekStartsOn });
       stat.weeklyCompletions = stat.weeklyTrendData
         .find((w: any) => isWithinInterval(new Date(), {
           start: new Date(w.tooltip.split(' - ')[0] + `, ${currentYear}`), 
@@ -742,3 +751,4 @@ const AnalyticsPage: React.FC = () => {
 };
 
 export default AnalyticsPage;
+
