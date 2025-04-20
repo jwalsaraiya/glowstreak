@@ -1,11 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
-import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface TrendDataItem {
   name: string;
@@ -29,69 +28,37 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   isDarkTheme
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [maxScroll, setMaxScroll] = useState(0);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [containerWidth, setContainerWidth] = useState(0);
   const [chartWidth, setChartWidth] = useState(0);
   
-  // Find current week/month to scroll to it on initial render
-  const currentIndex = data.findIndex(item => item.isCurrent);
+  // Set up constants for bar sizes and spacing
+  const barWidth = range === 'weekly' ? 20 : 40;
+  const barGap = range === 'weekly' ? 10 : 20;
+  const computedChartWidth = (range === 'weekly' ? 53 : 12) * (barWidth + barGap);
   
-  // Calculate average completion percentage (only for valid timeframes - not future)
+  // Calculate average completion percentage
   const validItems = data.filter(item => !item.isFuture);
   const averageCompletion = validItems.length > 0
     ? Math.round(validItems.reduce((sum, item) => sum + item.value, 0) / validItems.length)
     : 0;
-  
-  // Set up constants for bar sizes and spacing
-  const barWidth = range === 'weekly' ? 20 : 40; // Different bar widths for weekly vs monthly
-  const barGap = range === 'weekly' ? 10 : 20;
-  const computedChartWidth = data.length * (barWidth + barGap);
 
   useEffect(() => {
     if (scrollRef.current) {
-      // Get the container dimensions
       const containerRect = scrollRef.current.getBoundingClientRect();
       setContainerWidth(containerRect.width);
-      
-      // Calculate the maximum scroll position
-      setMaxScroll(Math.max(0, computedChartWidth - containerRect.width));
       setChartWidth(computedChartWidth);
       
-      // Scroll to current week/month on initial render
+      // Scroll to current time period on initial render
+      const currentIndex = data.findIndex(item => item.isCurrent);
       if (currentIndex > -1) {
         const scrollTo = Math.max(0, 
           (currentIndex * (barWidth + barGap)) - (containerRect.width / 2) + (barWidth / 2));
         scrollRef.current.scrollLeft = scrollTo;
-        setScrollPosition(scrollTo);
       }
     }
-  }, [data, range, containerWidth, currentIndex, barWidth, barGap, computedChartWidth]);
+  }, [data, range, barWidth, barGap, computedChartWidth]);
 
-  // Handle scroll event
-  const handleScroll = () => {
-    if (scrollRef.current) {
-      setScrollPosition(scrollRef.current.scrollLeft);
-    }
-  };
-
-  // Scroll left/right functions
-  const scrollLeft = () => {
-    if (scrollRef.current) {
-      const newPosition = Math.max(0, scrollPosition - containerWidth * 0.75);
-      scrollRef.current.scrollLeft = newPosition;
-      setScrollPosition(newPosition);
-    }
-  };
-  
-  const scrollRight = () => {
-    if (scrollRef.current) {
-      const newPosition = Math.min(maxScroll, scrollPosition + containerWidth * 0.75);
-      scrollRef.current.scrollLeft = newPosition;
-      setScrollPosition(newPosition);
-    }
-  };
-  
   // Get customized tooltip content
   const getTooltipContent = (props: any) => {
     const { active, payload } = props;
@@ -115,49 +82,41 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                 <span className="font-medium text-sm">{data.completedDays}/{data.totalDays} days</span>
               </div>
             )}
-            {data.isFuture && (
-              <div className="text-muted-foreground text-xs italic mt-1">
-                Upcoming
-              </div>
-            )}
           </div>
         </div>
       );
     }
-    
     return null;
   };
+
+  // Generate year options (last 5 years)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center space-x-2">
-          <Button 
-            onClick={scrollLeft} 
-            variant="outline" 
-            size="icon" 
-            disabled={scrollPosition <= 0}
-            aria-label="Scroll left"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Button 
-            onClick={scrollRight} 
-            variant="outline" 
-            size="icon" 
-            disabled={scrollPosition >= maxScroll}
-            aria-label="Scroll right"
-          >
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
+        <Select 
+          value={selectedYear.toString()} 
+          onValueChange={(value) => setSelectedYear(parseInt(value))}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select year" />
+          </SelectTrigger>
+          <SelectContent>
+            {yearOptions.map((year) => (
+              <SelectItem key={year} value={year.toString()}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       
       <div className="border rounded-md">
         <ScrollArea 
           ref={scrollRef} 
-          className="h-[300px] overflow-x-auto" 
-          onScroll={handleScroll}
+          className="h-[300px] overflow-x-auto overflow-y-hidden" 
         >
           <div style={{ width: `${Math.max(containerWidth, chartWidth)}px`, minWidth: '100%' }}>
             <ChartContainer
@@ -172,12 +131,6 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                   theme: { 
                     light: "#0d968b", 
                     dark: "#0d968b" 
-                  }
-                },
-                future: { 
-                  theme: { 
-                    light: "#d1d5db", 
-                    dark: "#6b7280" 
                   }
                 }
               }}
@@ -222,11 +175,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                     {data.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={
-                          entry.isFuture ? 'var(--color-future)' :
-                          entry.isCurrent ? 'var(--color-current)' : 
-                          'var(--color-default)'
-                        }
+                        fill={entry.isCurrent ? 'var(--color-current)' : 'var(--color-default)'}
                       />
                     ))}
                   </Bar>
@@ -237,21 +186,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         </ScrollArea>
       </div>
 
-      <div className="flex flex-wrap justify-between items-center gap-2 pt-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#0d968b]" />
-            <span className="text-xs text-muted-foreground">Standard</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#f97316]" />
-            <span className="text-xs text-muted-foreground">Current {range === 'weekly' ? 'Week' : 'Month'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-sm bg-gray-300 dark:bg-gray-600" />
-            <span className="text-xs text-muted-foreground">Upcoming</span>
-          </div>
-        </div>
+      <div className="flex justify-end">
         <Badge variant="outline" className="font-mono">
           Average Completion: {averageCompletion}%
         </Badge>
