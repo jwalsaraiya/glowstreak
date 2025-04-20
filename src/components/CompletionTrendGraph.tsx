@@ -20,15 +20,18 @@ interface CompletionTrendGraphProps {
   data: TrendDataItem[];
   range: 'weekly' | 'monthly';
   isDarkTheme: boolean;
+  onYearChange: (year: number) => void;
+  selectedYear: number;
 }
 
 export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   data,
   range,
-  isDarkTheme
+  isDarkTheme,
+  onYearChange,
+  selectedYear
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [containerWidth, setContainerWidth] = useState(0);
   const [chartWidth, setChartWidth] = useState(0);
   
@@ -42,6 +45,14 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   const averageCompletion = validItems.length > 0
     ? Math.round(validItems.reduce((sum, item) => sum + item.value, 0) / validItems.length)
     : 0;
+
+  // Generate year options dynamically
+  const currentYear = new Date().getFullYear();
+  const startYear = Math.max(currentYear - 10, 2020); // Set a reasonable lower bound
+  const yearOptions = Array.from(
+    { length: currentYear - startYear + 3 }, 
+    (_, i) => currentYear - i + 1
+  ).filter(year => year >= startYear);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -89,16 +100,12 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     return null;
   };
 
-  // Generate year options (last 5 years)
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
-
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <Select 
           value={selectedYear.toString()} 
-          onValueChange={(value) => setSelectedYear(parseInt(value))}
+          onValueChange={(value) => onYearChange(parseInt(value))}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select year" />
@@ -111,12 +118,18 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
             ))}
           </SelectContent>
         </Select>
+        
+        <div className="flex items-center">
+          <div className="w-3 h-3 rounded-sm bg-[#f97316] mr-2"></div>
+          <span className="text-xs text-muted-foreground">Current {range === 'weekly' ? 'Week' : 'Month'}</span>
+        </div>
       </div>
       
       <div className="border rounded-md">
         <ScrollArea 
           ref={scrollRef} 
-          className="h-[300px] overflow-x-auto overflow-y-hidden" 
+          className="h-[250px] overflow-x-auto overflow-y-hidden" 
+          orientation="horizontal"
         >
           <div style={{ width: `${Math.max(containerWidth, chartWidth)}px`, minWidth: '100%' }}>
             <ChartContainer
@@ -135,7 +148,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                 }
               }}
             >
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={200}>
                 <BarChart
                   data={data}
                   margin={{
