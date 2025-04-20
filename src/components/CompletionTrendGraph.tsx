@@ -1,22 +1,10 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { 
-  isBefore, 
-  isAfter, 
-  startOfWeek, 
-  endOfWeek,
-  format,
-  isSameWeek,
-  differenceInWeeks,
-  differenceInMonths,
-  startOfMonth,
-  endOfMonth,
-  isSameMonth
-} from 'date-fns';
 
 interface TrendDataItem {
   name: string;
@@ -47,17 +35,20 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
   const [containerWidth, setContainerWidth] = useState(0);
   const [chartWidth, setChartWidth] = useState(0);
   
+  // Set up constants for bar sizes and spacing
   const barWidth = range === 'weekly' ? 20 : 40;
   const barGap = range === 'weekly' ? 10 : 20;
   const computedChartWidth = (range === 'weekly' ? 53 : 12) * (barWidth + barGap);
   
-  const validItems = data.filter(item => !item.isFuture && item.value > 0);
+  // Calculate average completion percentage
+  const validItems = data.filter(item => !item.isFuture);
   const averageCompletion = validItems.length > 0
     ? Math.round(validItems.reduce((sum, item) => sum + item.value, 0) / validItems.length)
     : 0;
 
+  // Generate year options dynamically
   const currentYear = new Date().getFullYear();
-  const startYear = Math.max(currentYear - 10, 2020);
+  const startYear = Math.max(currentYear - 10, 2020); // Set a reasonable lower bound
   const yearOptions = Array.from(
     { length: currentYear - startYear + 3 }, 
     (_, i) => currentYear - i + 1
@@ -69,6 +60,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
       setContainerWidth(containerRect.width);
       setChartWidth(computedChartWidth);
       
+      // Scroll to current time period on initial render
       const currentIndex = data.findIndex(item => item.isCurrent);
       if (currentIndex > -1) {
         const scrollTo = Math.max(0, 
@@ -78,19 +70,12 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     }
   }, [data, range, barWidth, barGap, computedChartWidth]);
 
+  // Get customized tooltip content
   const getTooltipContent = (props: any) => {
     const { active, payload } = props;
     
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      
-      if (data.isFuture) {
-        return (
-          <div className="rounded-lg border bg-background p-2 shadow-md">
-            <div className="font-medium">Upcoming</div>
-          </div>
-        );
-      }
       
       return (
         <div className="rounded-lg border bg-background p-2 shadow-md">
@@ -142,11 +127,11 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
       
       <div className="border rounded-md">
         <ScrollArea 
-          ref={scrollRef}
-          className="h-[220px]"
+          ref={scrollRef} 
+          className="h-[250px] overflow-x-auto overflow-y-hidden"
         >
           <ScrollBar orientation="horizontal" />
-          <div style={{ width: `${Math.max(containerWidth, chartWidth)}px`, minWidth: '100%', height: '220px' }}>
+          <div style={{ width: `${Math.max(containerWidth, chartWidth)}px`, minWidth: '100%' }}>
             <ChartContainer
               config={{
                 current: { 
@@ -162,7 +147,6 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                   }
                 }
               }}
-              className="!h-[220px]"
             >
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart
@@ -204,8 +188,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
                     {data.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={entry.isCurrent ? '#f97316' : (entry.isFuture ? '#e5e7eb' : '#0d968b')}
-                        opacity={entry.isFuture ? 0.3 : 1}
+                        fill={entry.isCurrent ? 'var(--color-current)' : 'var(--color-default)'}
                       />
                     ))}
                   </Bar>
