@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -128,9 +128,9 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
       <div className="border rounded-md">
         <ScrollArea 
           ref={scrollRef} 
-          className="h-[250px] overflow-x-auto overflow-y-hidden" 
-          orientation="horizontal"
+          className="h-[250px] overflow-x-auto overflow-y-hidden"
         >
+          <ScrollBar orientation="horizontal" />
           <div style={{ width: `${Math.max(containerWidth, chartWidth)}px`, minWidth: '100%' }}>
             <ChartContainer
               config={{
