@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,6 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import StreakAnalytics from '@/components/StreakAnalytics';
 import { useTheme } from '@/hooks/use-theme';
+import { CompletionTrendGraph } from '@/components/CompletionTrendGraph';
 import { 
   format, 
   subDays, 
@@ -46,6 +48,7 @@ const AnalyticsPage: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [habitStats, setHabitStats] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
   const [settings, setSettings] = useState<{firstDayOfWeek: "sunday" | "monday"}>({ firstDayOfWeek: "sunday" });
 
   const currentYear = new Date().getFullYear();
@@ -716,7 +719,40 @@ const AnalyticsPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Completion Trend Graph section has been removed */}
+          {selectedStats && (
+            <div className="mb-8">
+              <Card className="mb-6">
+                <CardHeader className="pb-0">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl font-semibold">Completion Trend</CardTitle>
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        variant={viewMode === 'weekly' ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => setViewMode('weekly')}
+                      >
+                        Weekly
+                      </Button>
+                      <Button 
+                        variant={viewMode === 'monthly' ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => setViewMode('monthly')}
+                      >
+                        Monthly
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <CompletionTrendGraph 
+                    data={viewMode === 'weekly' ? selectedStats.weeklyTrendData : selectedStats.monthlyTrendData}
+                    range={viewMode}
+                    isDarkTheme={isDarkTheme}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {habitStats.length > 0 && (
             <div className="mb-8">
