@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Bell, Calendar, Home, Menu, PieChart, Plus, Settings, X } from 'lucide-react';
+import { Bell, Calendar, Home, Menu, PieChart, Plus, Settings, X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -146,6 +146,14 @@ const Navbar: React.FC<NavbarProps> = ({ onCreateHabit, onCreateOneTime, onCreat
               label="Analytics"
               to="/analytics"
               active={currentPath === "/analytics"}
+              compact={isMobile && !isOpen}
+              onClick={closeMenu}
+            />
+            <NavItem
+              icon={FileText}
+              label="Notes"
+              to="/notes"
+              active={currentPath === "/notes"}
               compact={isMobile && !isOpen}
               onClick={closeMenu}
             />
