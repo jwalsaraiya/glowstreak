@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,6 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import Analytics from "./pages/Analytics";
+import Notes from "./pages/Notes"; 
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -150,6 +152,11 @@ const AppContent: React.FC = () => {
           <Route path="/analytics" element={
             <ProtectedRoute>
               <Analytics />
+            </ProtectedRoute>
+          } />
+          <Route path="/notes" element={
+            <ProtectedRoute>
+              <Notes />
             </ProtectedRoute>
           } />
           <Route path="/settings" element={
