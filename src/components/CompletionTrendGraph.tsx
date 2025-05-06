@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -45,11 +46,14 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [chartWidth, setChartWidth] = useState(0);
   
   const barWidth = range === 'weekly' ? 20 : 40;
   const barGap = range === 'weekly' ? 10 : 20;
-  const computedChartWidth = (range === 'weekly' ? 53 : 12) * (barWidth + barGap);
+  
+  // Only calculate width for visible data points (non-future items)
+  const visibleData = data.filter(item => !item.isFuture);
+  const actualItemCount = Math.max(visibleData.length, 1); // Ensure at least one item
+  const computedChartWidth = actualItemCount * (barWidth + barGap);
   
   const validItems = data.filter(item => !item.isFuture && item.value > 0);
   const averageCompletion = validItems.length > 0
@@ -67,7 +71,6 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
     if (scrollRef.current) {
       const containerRect = scrollRef.current.getBoundingClientRect();
       setContainerWidth(containerRect.width);
-      setChartWidth(computedChartWidth);
       
       const currentIndex = data.findIndex(item => item.isCurrent);
       if (currentIndex > -1) {
@@ -76,7 +79,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
         scrollRef.current.scrollLeft = scrollTo;
       }
     }
-  }, [data, range, barWidth, barGap, computedChartWidth]);
+  }, [data, range, barWidth, barGap]);
 
   const getTooltipContent = (props: any) => {
     const { active, payload } = props;
@@ -146,7 +149,7 @@ export const CompletionTrendGraph: React.FC<CompletionTrendGraphProps> = ({
           className="h-[220px]"
         >
           <ScrollBar orientation="horizontal" />
-          <div style={{ width: `${Math.max(containerWidth, chartWidth)}px`, minWidth: '100%', height: '220px' }}>
+          <div style={{ width: '100%', height: '220px' }}>
             <ChartContainer
               config={{
                 current: { 
