@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Search, FileText, Trash2 } from 'lucide-react';
+import { PlusCircle, Search, FileText, Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +34,9 @@ const Notes = () => {
   });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<Note | null>(null);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
 
   // Load notes from localStorage
   useEffect(() => {
@@ -100,6 +102,37 @@ const Notes = () => {
     });
   };
 
+  // Update an existing note
+  const handleUpdateNote = () => {
+    if (!editingNote) return;
+    
+    if (!editingNote.title.trim() || !editingNote.content.trim()) {
+      toast({
+        title: "Error",
+        description: "Title and content cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const now = new Date();
+    const updatedNotes = notes.map(note => 
+      note.id === editingNote.id 
+        ? { ...editingNote, updatedAt: now.toISOString() } 
+        : note
+    );
+    
+    saveNotes(updatedNotes);
+    setCurrentNote({ ...editingNote, updatedAt: now.toISOString() });
+    setEditingNote(null);
+    setIsEditDialogOpen(false);
+    
+    toast({
+      title: "Success",
+      description: "Note updated successfully"
+    });
+  };
+
   // Delete a note
   const handleDeleteNote = (id: string) => {
     const updatedNotes = notes.filter(note => note.id !== id);
@@ -111,6 +144,15 @@ const Notes = () => {
       title: "Success",
       description: "Note deleted successfully"
     });
+  };
+
+  // Open edit dialog
+  const handleEditClick = () => {
+    if (!currentNote) return;
+    
+    setEditingNote({ ...currentNote });
+    setIsViewDialogOpen(false);
+    setIsEditDialogOpen(true);
   };
 
   // Filter notes based on search and category
@@ -271,22 +313,106 @@ const Notes = () => {
               </div>
               <DialogDescription className="flex justify-between items-center">
                 <span>Created {formatDate(currentNote.createdAt)}</span>
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteNote(currentNote.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditClick();
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteNote(currentNote.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </div>
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[300px] mt-2">
               <div className="p-2 whitespace-pre-wrap">{currentNote.content}</div>
             </ScrollArea>
+            {currentNote.updatedAt !== currentNote.createdAt && (
+              <div className="text-xs text-muted-foreground mt-2">
+                Last updated: {formatDate(currentNote.updatedAt)}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Edit Note Dialog */}
+      {editingNote && (
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setCurrentNote(editingNote);
+            setIsViewDialogOpen(true);
+          }
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Note</DialogTitle>
+              <DialogDescription>
+                Update your note's details.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="edit-title" className="text-sm font-medium">Title</label>
+                <Input
+                  id="edit-title"
+                  placeholder="Note title"
+                  value={editingNote.title}
+                  onChange={(e) => setEditingNote({...editingNote, title: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="edit-content" className="text-sm font-medium">Content</label>
+                <Textarea
+                  id="edit-content"
+                  placeholder="Write your note here..."
+                  className="min-h-[120px]"
+                  value={editingNote.content}
+                  onChange={(e) => setEditingNote({...editingNote, content: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="edit-category" className="text-sm font-medium">Category</label>
+                <select
+                  id="edit-category"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editingNote.category}
+                  onChange={(e) => setEditingNote({...editingNote, category: e.target.value})}
+                >
+                  <option value="personal">Personal</option>
+                  <option value="work">Work</option>
+                  <option value="study">Study</option>
+                  <option value="ideas">Ideas</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setIsEditDialogOpen(false);
+                setCurrentNote(editingNote);
+                setIsViewDialogOpen(true);
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateNote}>Save Changes</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
