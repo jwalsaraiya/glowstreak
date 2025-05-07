@@ -39,38 +39,47 @@ const Notes = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<Note | null>(null);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load notes from localStorage when component mounts or user changes
+  // Initial load of notes when component mounts
   useEffect(() => {
     if (!user) return;
+    
+    console.log("Initial notes loading in Notes component");
     loadNotes();
+    setIsInitialized(true);
   }, [user]);
   
-  // This ensures we're always working with the latest data from localStorage
-  // when the component is visible/focused
+  // This ensures we always have the latest data when the component is shown
   useEffect(() => {
-    // Add a focus event listener to reload notes when the window regains focus
-    const handleFocus = () => {
-      if (user) {
+    // Function to reload notes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user && isInitialized) {
+        console.log("Document became visible, reloading notes");
         loadNotes();
       }
     };
     
-    window.addEventListener('focus', handleFocus);
+    // Add event listeners for both focus and visibility change
+    window.addEventListener('focus', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     // Clean up
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('focus', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user]);
+  }, [user, isInitialized]);
 
   // Load notes from localStorage
   const loadNotes = () => {
     if (!user) return;
     
+    console.log("Loading notes for user:", user.id);
     const userData = localStorage.getItem(`userData_${user.id}`);
     
     if (!userData) {
+      console.log("No user data found, initializing empty notes array");
       setNotes([]);
       return;
     }
@@ -79,14 +88,21 @@ const Notes = () => {
       const parsedData = JSON.parse(userData);
       
       if (parsedData && Array.isArray(parsedData.notes)) {
+        console.log(`Found ${parsedData.notes.length} notes in localStorage`);
         setNotes(parsedData.notes);
       } else {
+        console.log("Notes array not found or invalid, initializing empty array");
         // Initialize notes as empty array if not found or not valid
         setNotes([]);
       }
     } catch (error) {
       console.error("Error parsing notes data:", error);
       setNotes([]);
+      toast({
+        title: "Error",
+        description: "Failed to load your notes. Please try refreshing the page.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -94,13 +110,21 @@ const Notes = () => {
   const saveNotes = (updatedNotes: Note[]) => {
     if (!user) return;
     
+    console.log(`Saving ${updatedNotes.length} notes for user ${user.id}`);
+    
     try {
+      // Get current user data to preserve other data
       const userData = localStorage.getItem(`userData_${user.id}`);
       const parsedData = userData ? JSON.parse(userData) : {};
       
+      // Update only the notes property
       parsedData.notes = updatedNotes;
+      
+      // Save back to localStorage
       localStorage.setItem(`userData_${user.id}`, JSON.stringify(parsedData));
       setNotes(updatedNotes);
+      
+      console.log("Notes saved successfully");
     } catch (error) {
       console.error("Error saving notes data:", error);
       toast({
@@ -264,12 +288,12 @@ const Notes = () => {
 
       <Tabs defaultValue="all" className="w-full" onValueChange={setActiveCategory}>
         <div className="mb-4">
-          <TabsList className="w-full flex flex-wrap gap-1 bg-background p-1 h-auto">
+          <TabsList className="w-full flex flex-wrap gap-1 bg-primary/10 p-1 h-auto">
             {categories.map((category) => (
               <TabsTrigger 
                 key={category} 
                 value={category} 
-                className="capitalize my-1 bg-secondary/20 data-[state=active]:bg-primary"
+                className="capitalize my-1 bg-background data-[state=active]:bg-primary"
               >
                 {category}
               </TabsTrigger>
