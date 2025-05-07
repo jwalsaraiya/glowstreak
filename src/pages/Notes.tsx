@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { format } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Note {
   id: string;
@@ -24,6 +25,7 @@ interface Note {
 const Notes = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
@@ -198,13 +200,15 @@ const Notes = () => {
       </div>
 
       <Tabs defaultValue="all" className="w-full" onValueChange={setActiveCategory}>
-        <TabsList className="mb-4 w-full md:w-auto flex overflow-x-auto">
-          {categories.map((category) => (
-            <TabsTrigger key={category} value={category} className="capitalize">
-              {category}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <ScrollArea className="w-full">
+          <TabsList className={`mb-4 ${isMobile ? 'flex w-auto' : 'w-full md:w-auto flex'} overflow-x-auto`}>
+            {categories.map((category) => (
+              <TabsTrigger key={category} value={category} className="capitalize">
+                {category}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </ScrollArea>
 
         <TabsContent value={activeCategory} className="mt-0">
           {filteredNotes.length === 0 ? (
