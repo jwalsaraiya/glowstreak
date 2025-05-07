@@ -90,12 +90,6 @@ const Notes = () => {
     const updatedNotes = [...notes, note];
     saveNotes(updatedNotes);
     
-    setNewNote({
-      title: '',
-      content: '',
-      category: 'personal'
-    });
-    
     setIsCreateDialogOpen(false);
     
     toast({
@@ -177,6 +171,23 @@ const Notes = () => {
       return 'Invalid date';
     }
   };
+  
+  // Handle dialog close
+  const handleCreateDialogClose = (open: boolean) => {
+    setIsCreateDialogOpen(open);
+    // Only clear the form data if the dialog is being closed via Cancel button
+    // The form data will be cleared elsewhere when the note is successfully created
+  };
+  
+  // Handle cancel button click in create dialog
+  const handleCancelCreate = () => {
+    setNewNote({
+      title: '',
+      content: '',
+      category: 'personal'
+    });
+    setIsCreateDialogOpen(false);
+  };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -200,15 +211,19 @@ const Notes = () => {
       </div>
 
       <Tabs defaultValue="all" className="w-full" onValueChange={setActiveCategory}>
-        <ScrollArea className="w-full">
-          <TabsList className={`mb-4 ${isMobile ? 'flex w-auto' : 'w-full md:w-auto flex'} overflow-x-auto`}>
+        <div className="mb-4">
+          <TabsList className="w-full flex flex-wrap gap-1 bg-background p-1 h-auto">
             {categories.map((category) => (
-              <TabsTrigger key={category} value={category} className="capitalize">
+              <TabsTrigger 
+                key={category} 
+                value={category} 
+                className="capitalize my-1 bg-secondary/20 data-[state=active]:bg-primary"
+              >
                 {category}
               </TabsTrigger>
             ))}
           </TabsList>
-        </ScrollArea>
+        </div>
 
         <TabsContent value={activeCategory} className="mt-0">
           {filteredNotes.length === 0 ? (
@@ -253,7 +268,7 @@ const Notes = () => {
       </Tabs>
 
       {/* Create Note Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <Dialog open={isCreateDialogOpen} onOpenChange={handleCreateDialogClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Create New Note</DialogTitle>
@@ -298,7 +313,7 @@ const Notes = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={handleCancelCreate}>Cancel</Button>
             <Button onClick={handleCreateNote}>Create Note</Button>
           </DialogFooter>
         </DialogContent>
