@@ -44,6 +44,14 @@ const Notes = () => {
   useEffect(() => {
     if (!user) return;
     
+    // Load existing notes when component mounts
+    loadNotes();
+  }, [user]);
+
+  // Load notes from localStorage
+  const loadNotes = () => {
+    if (!user) return;
+    
     const userData = localStorage.getItem(`userData_${user.id}`);
     const parsedData = userData ? JSON.parse(userData) : {};
     
@@ -52,7 +60,7 @@ const Notes = () => {
     } else {
       setNotes([]);
     }
-  }, [user]);
+  };
 
   // Save notes to localStorage
   const saveNotes = (updatedNotes: Note[]) => {
@@ -89,6 +97,13 @@ const Notes = () => {
     
     const updatedNotes = [...notes, note];
     saveNotes(updatedNotes);
+    
+    // Clear the form data after successful creation
+    setNewNote({
+      title: '',
+      content: '',
+      category: 'personal'
+    });
     
     setIsCreateDialogOpen(false);
     
