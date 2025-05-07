@@ -40,12 +40,28 @@ const Notes = () => {
   const [currentNote, setCurrentNote] = useState<Note | null>(null);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
 
-  // Load notes from localStorage
+  // Load notes from localStorage when component mounts or user changes
   useEffect(() => {
     if (!user) return;
-    
-    // Load existing notes when component mounts
     loadNotes();
+  }, [user]);
+  
+  // This ensures we're always working with the latest data from localStorage
+  // when the component is visible/focused
+  useEffect(() => {
+    // Add a focus event listener to reload notes when the window regains focus
+    const handleFocus = () => {
+      if (user) {
+        loadNotes();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [user]);
 
   // Load notes from localStorage
@@ -53,11 +69,23 @@ const Notes = () => {
     if (!user) return;
     
     const userData = localStorage.getItem(`userData_${user.id}`);
-    const parsedData = userData ? JSON.parse(userData) : {};
     
-    if (parsedData.notes) {
-      setNotes(parsedData.notes);
-    } else {
+    if (!userData) {
+      setNotes([]);
+      return;
+    }
+    
+    try {
+      const parsedData = JSON.parse(userData);
+      
+      if (parsedData && Array.isArray(parsedData.notes)) {
+        setNotes(parsedData.notes);
+      } else {
+        // Initialize notes as empty array if not found or not valid
+        setNotes([]);
+      }
+    } catch (error) {
+      console.error("Error parsing notes data:", error);
       setNotes([]);
     }
   };
@@ -66,12 +94,21 @@ const Notes = () => {
   const saveNotes = (updatedNotes: Note[]) => {
     if (!user) return;
     
-    const userData = localStorage.getItem(`userData_${user.id}`);
-    const parsedData = userData ? JSON.parse(userData) : {};
-    
-    parsedData.notes = updatedNotes;
-    localStorage.setItem(`userData_${user.id}`, JSON.stringify(parsedData));
-    setNotes(updatedNotes);
+    try {
+      const userData = localStorage.getItem(`userData_${user.id}`);
+      const parsedData = userData ? JSON.parse(userData) : {};
+      
+      parsedData.notes = updatedNotes;
+      localStorage.setItem(`userData_${user.id}`, JSON.stringify(parsedData));
+      setNotes(updatedNotes);
+    } catch (error) {
+      console.error("Error saving notes data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save notes. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Create a new note
