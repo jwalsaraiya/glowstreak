@@ -2,20 +2,29 @@
 
 # ⚡ Glowstreak
 
-### High-Performance Habit Analytics & Productivity Suite
+### High-Performance Habit Analytics & Momentum Suite
 
+[![Live App](https://img.shields.io/badge/Live_App-glowstreak.lovable.app-10B981?style=for-the-badge&logo=safari&logoColor=white)](https://glowstreak.lovable.app)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Accessible-000000?style=for-the-badge&logo=shadcnui&logoColor=white)](https://ui.shadcn.com/)
 [![Recharts](https://img.shields.io/badge/Recharts-Data_Viz-22B5BF?style=for-the-badge&logo=react&logoColor=white)](https://recharts.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 
 <p align="center">
   <b>Quantify your focus. Visualize your momentum.</b><br />
   A modern, distraction-free habit tracking engine built with accessible primitives, calendar heatmaps, and reactive analytics.
 </p>
 
+<p align="center">
+  🔗 <b>Live Deployment:</b> <a href="https://glowstreak.lovable.app"><b>glowstreak.lovable.app</b></a>
+</p>
+
 </div>
+
+---
+
+> [!NOTE]  
+> **Engineering Context**: This project was developed as an early exploration into agentic software generation, full-stack scaffolding tools, and autonomous coding agents—investigating how agent-driven workflows synthesize complex multi-page state and component hierarchies.
 
 ---
 
@@ -74,7 +83,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` to view the application.
+Open `http://localhost:5173` to view the application, or test the production build directly on [glowstreak.lovable.app](https://glowstreak.lovable.app).
 
 ---
 
